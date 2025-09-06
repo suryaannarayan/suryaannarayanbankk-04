@@ -21,6 +21,7 @@ import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 import Transactions from "./pages/Transactions";
 import FixedDeposit from "./pages/FixedDeposit";
+import GoogleSheetsIntegration from "./pages/GoogleSheetsIntegration";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
                   <Route path="/admin" element={<AdminPanel />} />
                   <Route path="/transactions" element={<Transactions />} />
                   <Route path="/fixed-deposit" element={<FixedDeposit />} />
+                  <Route path="/google-sheets" element={<GoogleSheetsIntegration />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
