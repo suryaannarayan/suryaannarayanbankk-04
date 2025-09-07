@@ -7,16 +7,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GoogleSheetsService, GoogleSheetsUtils } from '@/services/googleSheetsService';
+import { GoogleSheetsBankService } from '@/services/googleSheetsBankService';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, FileSpreadsheet, Eye, Edit, Plus } from 'lucide-react';
+import { Loader2, FileSpreadsheet, Eye, Edit, Plus, Upload, Database } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import { useBank } from '@/context/BankContext';
+import GoogleSheetsStatus from '@/components/ui/GoogleSheetsStatus';
 
 const GoogleSheetsIntegration = () => {
-  const [spreadsheetId, setSpreadsheetId] = useState('');
+  const [spreadsheetId, setSpreadsheetId] = useState('1aQ03-kaMJeQyyqVICBOLZO0UZxBOf4vbPLuc_9SnpO8');
   const [range, setRange] = useState('Sheet1!A1:C10');
   const [isLoading, setIsLoading] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [data, setData] = useState<any[][]>([]);
   const [writeData, setWriteData] = useState('');
+  const { isGoogleSheetsMode } = useBank();
 
   const handleReadSheet = async () => {
     if (!spreadsheetId || !range) {
@@ -78,15 +83,79 @@ const GoogleSheetsIntegration = () => {
     }
   };
 
+  const handleMigrateData = async () => {
+    setIsMigrating(true);
+    try {
+      await GoogleSheetsBankService.migrateFromLocalStorage();
+      toast({
+        title: "Migration Successful",
+        description: "All data has been migrated to Google Sheets"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Migration Failed",
+        description: error.message || "Failed to migrate data to Google Sheets",
+        variant: "destructive"
+      });
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <FileSpreadsheet className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Google Sheets Integration</h1>
-            <p className="text-muted-foreground">Connect and sync data with Google Sheets</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <FileSpreadsheet className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">Google Sheets Integration</h1>
+              <p className="text-muted-foreground">Connect and sync data with Google Sheets</p>
+            </div>
           </div>
+          <GoogleSheetsStatus />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Alert>
+            <Database className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Banking Data Sync:</strong> Your app is now configured to use Google Sheets as the backend database. 
+              All user data, transactions, and balances are automatically synced to the connected Google Sheet.
+            </AlertDescription>
+          </Alert>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Data Migration
+              </CardTitle>
+              <CardDescription>
+                Migrate existing local data to Google Sheets
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={handleMigrateData} 
+                disabled={isMigrating}
+                className="w-full"
+                variant={isGoogleSheetsMode ? "secondary" : "default"}
+              >
+                {isMigrating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Migrating...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isGoogleSheetsMode ? "Re-sync Data" : "Migrate to Google Sheets"}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <Alert>

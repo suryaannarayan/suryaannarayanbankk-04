@@ -9,6 +9,7 @@ import {
   getUserAccountNumberRequest as getAccountRequest
 } from '@/utils/bankUtils';
 import { useToast } from "@/hooks/use-toast";
+import { GoogleSheetsBankService } from '@/services/googleSheetsBankService';
 
 // Create a context for authentication
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -143,6 +144,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Save to "database"
       existingUsers.push(newUser);
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(existingUsers));
+      
+      // Also sync to Google Sheets
+      try {
+        const { password: _, ...userWithoutPassword } = newUser;
+        await GoogleSheetsBankService.syncUserFromLocalStorage(userWithoutPassword);
+      } catch (error) {
+        console.warn('Failed to sync user to Google Sheets:', error);
+      }
       
       // Log in the user automatically
       const { password: _, ...userWithoutPassword } = newUser;

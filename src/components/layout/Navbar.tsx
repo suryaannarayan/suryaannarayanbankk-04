@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from "@/components/ui/button";
 import { LogIn, Menu, X, User, LogOut, PiggyBank } from 'lucide-react';
+import GoogleSheetsStatus from "@/components/ui/GoogleSheetsStatus";
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -79,6 +80,17 @@ const Navbar: React.FC = () => {
               >
                 Fixed Deposits
               </Link>
+
+              <Link 
+                to="/google-sheets"
+                className={`${
+                  location.pathname === '/google-sheets' 
+                    ? 'text-bank-blue font-semibold' 
+                    : 'text-gray-600 hover:text-bank-blue'
+                } transition-all duration-200`}
+              >
+                Google Sheets
+              </Link>
               
               <Link 
                 to="/transactions"
@@ -121,6 +133,7 @@ const Navbar: React.FC = () => {
           
           {user ? (
             <div className="flex items-center gap-3">
+              <GoogleSheetsStatus />
               <Link to="/dashboard" className="flex items-center gap-2 text-bank-blue">
                 <User size={18} />
                 <span className="font-medium">{user.username}</span>

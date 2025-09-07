@@ -92,6 +92,7 @@ export interface BankContextType {
   withdraw: (amount: number) => Promise<void>;
   transfer: (amount: number, recipientAccountNumber: string, note?: string) => Promise<void>;
   getTransactions: () => Promise<void>;
+  isGoogleSheetsMode?: boolean;
 }
 
 export interface FixedDepositContextType {
