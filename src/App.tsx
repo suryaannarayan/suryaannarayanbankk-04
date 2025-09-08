@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { BankProvider } from "@/context/BankContext";
 import { AdminProvider } from "@/context/AdminContext";
 import { FixedDepositProvider } from "@/context/FixedDepositContext";
+import { CreditCardProvider } from "@/context/CreditCardContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -22,6 +23,8 @@ import NotFound from "./pages/NotFound";
 import Transactions from "./pages/Transactions";
 import FixedDeposit from "./pages/FixedDeposit";
 import GoogleSheetsIntegration from "./pages/GoogleSheetsIntegration";
+import CreditCard from "./pages/CreditCard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -32,27 +35,30 @@ const App = () => (
         <BankProvider>
           <AdminProvider>
             <FixedDepositProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/payments" element={<Payments />} />
-                  <Route path="/deposits" element={<Deposits />} />
-                  <Route path="/investments" element={<Investments />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/admin" element={<AdminPanel />} />
-                  <Route path="/transactions" element={<Transactions />} />
-                  <Route path="/fixed-deposit" element={<FixedDeposit />} />
-                  <Route path="/google-sheets" element={<GoogleSheetsIntegration />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
+              <CreditCardProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/payments" element={<Payments />} />
+                    <Route path="/deposits" element={<ProtectedRoute adminOnly><Deposits /></ProtectedRoute>} />
+                    <Route path="/investments" element={<Investments />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/admin" element={<AdminPanel />} />
+                    <Route path="/transactions" element={<Transactions />} />
+                    <Route path="/fixed-deposit" element={<FixedDeposit />} />
+                    <Route path="/credit-card" element={<CreditCard />} />
+                    <Route path="/google-sheets" element={<ProtectedRoute adminOnly><GoogleSheetsIntegration /></ProtectedRoute>} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </CreditCardProvider>
             </FixedDepositProvider>
           </AdminProvider>
         </BankProvider>

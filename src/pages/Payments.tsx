@@ -117,13 +117,13 @@ const Payments = () => {
                   <label htmlFor="recipient" className="block text-sm font-medium text-gray-700 mb-1">
                     Recipient Account Number
                   </label>
-                  <Input
-                    id="recipient"
-                    type="text"
-                    placeholder="SRY0000000000"
-                    value={transferRecipient}
-                    onChange={(e) => setTransferRecipient(e.target.value)}
-                  />
+                   <Input
+                     id="recipient"
+                     type="text"
+                     placeholder="SN00000000000"
+                     value={transferRecipient}
+                     onChange={(e) => setTransferRecipient(e.target.value)}
+                   />
                 </div>
                 
                 <div>

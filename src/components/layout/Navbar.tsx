@@ -82,15 +82,28 @@ const Navbar: React.FC = () => {
               </Link>
 
               <Link 
-                to="/google-sheets"
+                to="/credit-card"
                 className={`${
-                  location.pathname === '/google-sheets' 
+                  location.pathname === '/credit-card' 
                     ? 'text-bank-blue font-semibold' 
                     : 'text-gray-600 hover:text-bank-blue'
                 } transition-all duration-200`}
               >
-                Google Sheets
+                Credit Card
               </Link>
+
+              {user.isAdmin && (
+                <Link 
+                  to="/google-sheets"
+                  className={`${
+                    location.pathname === '/google-sheets' 
+                      ? 'text-bank-blue font-semibold' 
+                      : 'text-gray-600 hover:text-bank-blue'
+                  } transition-all duration-200`}
+                >
+                  Google Sheets
+                </Link>
+              )}
               
               <Link 
                 to="/transactions"
@@ -203,6 +216,15 @@ const Navbar: React.FC = () => {
                 <PiggyBank className="h-5 w-5 mr-2" />
                 Fixed Deposits
               </Link>
+
+              <Link
+                to="/credit-card"
+                className={`${
+                  location.pathname === '/credit-card' ? 'text-bank-blue font-semibold' : 'text-gray-600'
+                } py-2 border-b border-gray-100`}
+              >
+                Credit Card
+              </Link>
               
               <Link
                 to="/transactions"
@@ -214,14 +236,25 @@ const Navbar: React.FC = () => {
               </Link>
               
               {user.isAdmin && (
-                <Link
-                  to="/admin"
-                  className={`${
-                    location.pathname === '/admin' ? 'text-bank-blue font-semibold' : 'text-gray-600'
-                  } py-2 border-b border-gray-100`}
-                >
-                  Admin Panel
-                </Link>
+                <>
+                  <Link
+                    to="/admin"
+                    className={`${
+                      location.pathname === '/admin' ? 'text-bank-blue font-semibold' : 'text-gray-600'
+                    } py-2 border-b border-gray-100`}
+                  >
+                    Admin Panel
+                  </Link>
+                  
+                  <Link
+                    to="/google-sheets"
+                    className={`${
+                      location.pathname === '/google-sheets' ? 'text-bank-blue font-semibold' : 'text-gray-600'
+                    } py-2 border-b border-gray-100`}
+                  >
+                    Google Sheets
+                  </Link>
+                </>
               )}
               
               <div className="pt-4">

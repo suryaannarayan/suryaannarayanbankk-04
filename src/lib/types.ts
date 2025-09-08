@@ -42,6 +42,24 @@ export interface Transaction {
   timestamp: Date;
 }
 
+export interface CreditCard {
+  id: string;
+  userId: string;
+  cardNumber: string;
+  cardholderName: string;
+  cvv: string;
+  expiryDate: Date;
+  pin: string;
+  isActive: boolean;
+  isBlocked: boolean;
+  failedAttempts: number;
+  temporaryBlockUntil?: Date;
+  permanentlyBlocked: boolean;
+  validityYears: number;
+  createdAt: Date;
+  lastUsed?: Date;
+}
+
 export interface FixedDeposit {
   id: string;
   userId: string;
@@ -95,6 +113,18 @@ export interface BankContextType {
   isGoogleSheetsMode?: boolean;
 }
 
+export interface CreditCardContextType {
+  creditCards: CreditCard[];
+  loading: boolean;
+  createCreditCard: (cardholderName: string, pin: string) => Promise<void>;
+  validateCreditCard: (cardNumber: string, pin: string) => Promise<boolean>;
+  blockCreditCard: (cardId: string) => Promise<void>;
+  unblockCreditCard: (cardId: string) => Promise<void>;
+  updateCreditCardValidity: (cardId: string, additionalYears: number) => Promise<void>;
+  getUserCreditCards: () => Promise<void>;
+  recordFailedAttempt: (cardNumber: string) => Promise<void>;
+}
+
 export interface FixedDepositContextType {
   fixedDeposits: FixedDeposit[];
   interestRates: FDInterestRate[];
@@ -130,4 +160,6 @@ export interface AdminContextType {
   approveAccountNumberChange: (requestId: string) => Promise<void>;
   rejectAccountNumberChange: (requestId: string) => Promise<void>;
   changeUserAccountNumber: (userId: string, newAccountNumber: string) => Promise<void>;
+  getAllCreditCards: () => Promise<CreditCard[]>;
+  updateCreditCard: (cardId: string, updates: Partial<CreditCard>) => Promise<void>;
 }
