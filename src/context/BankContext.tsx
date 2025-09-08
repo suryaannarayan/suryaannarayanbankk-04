@@ -169,6 +169,7 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       if (!user) throw new Error("User not authenticated");
+      if (!user.isAdmin) throw new Error("Only admin can make deposits");
       if (amount <= 0) throw new Error("Amount must be greater than zero");
       
       const newBalance = user.balance + amount;
@@ -196,6 +197,7 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       if (!user) throw new Error("User not authenticated");
+      if (!user.isAdmin) throw new Error("Only admin can make withdrawals");
       if (amount <= 0) throw new Error("Amount must be greater than zero");
       if (user.balance < amount) throw new Error("Insufficient balance");
       

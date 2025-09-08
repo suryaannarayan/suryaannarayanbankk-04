@@ -386,6 +386,39 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const getAllCreditCards = async (): Promise<any[]> => {
+    try {
+      return JSON.parse(localStorage.getItem('suryabank_credit_cards') || '[]');
+    } catch (error) {
+      console.error('Failed to get credit cards:', error);
+      return [];
+    }
+  };
+
+  const updateCreditCard = async (cardId: string, updates: Partial<any>): Promise<void> => {
+    try {
+      const existingCards = JSON.parse(localStorage.getItem('suryabank_credit_cards') || '[]');
+      const cardIndex = existingCards.findIndex((c: any) => c.id === cardId);
+      
+      if (cardIndex === -1) throw new Error('Card not found');
+      
+      existingCards[cardIndex] = { ...existingCards[cardIndex], ...updates };
+      localStorage.setItem('suryabank_credit_cards', JSON.stringify(existingCards));
+      
+      toast({
+        title: "Card Updated",
+        description: "Credit card has been updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
   return (
     <AdminContext.Provider value={{ 
       users, 
@@ -402,7 +435,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       getAccountNumberRequests,
       approveAccountNumberChange,
       rejectAccountNumberChange,
-      changeUserAccountNumber
+      changeUserAccountNumber,
+      getAllCreditCards,
+      updateCreditCard
     }}>
       {children}
     </AdminContext.Provider>
