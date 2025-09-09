@@ -3,15 +3,22 @@ import { Badge } from '@/components/ui/badge';
 import { CloudIcon, HardDriveIcon } from 'lucide-react';
 import { useBank } from '@/context/BankContext';
 
-const GoogleSheetsStatus = () => {
+interface GoogleSheetsStatusProps {
+  isConnected?: boolean;
+}
+
+const GoogleSheetsStatus: React.FC<GoogleSheetsStatusProps> = ({ isConnected }) => {
   const { isGoogleSheetsMode } = useBank();
+  
+  // Use prop if provided, otherwise use context
+  const connected = isConnected !== undefined ? isConnected : isGoogleSheetsMode;
 
   return (
     <Badge 
-      variant={isGoogleSheetsMode ? "default" : "secondary"} 
+      variant={connected ? "default" : "secondary"} 
       className="flex items-center gap-1"
     >
-      {isGoogleSheetsMode ? (
+      {connected ? (
         <>
           <CloudIcon className="h-3 w-3" />
           Google Sheets

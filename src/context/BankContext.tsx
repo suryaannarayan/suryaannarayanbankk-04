@@ -21,39 +21,49 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isGoogleSheetsMode, setIsGoogleSheetsMode] = useState<boolean>(true);
   const { toast } = useToast();
 
-  // Initialize Google Sheets and migrate data if needed
+  // Initialize storage and Google Sheets connection
   useEffect(() => {
-    const initializeGoogleSheets = async () => {
+    const initializeDataSources = async () => {
+      // Always ensure local storage has proper structure
+      if (!localStorage.getItem(USERS_STORAGE_KEY)) {
+        localStorage.setItem(USERS_STORAGE_KEY, '[]');
+      }
+      if (!localStorage.getItem(TRANSACTIONS_STORAGE_KEY)) {
+        localStorage.setItem(TRANSACTIONS_STORAGE_KEY, '[]');
+      }
+
+      // Try to connect to Google Sheets for cloud sync
       try {
-        // Try to initialize Google Sheets
+        console.log('Attempting to connect to Google Sheets...');
         await GoogleSheetsBankService.initializeSheets();
+        setIsGoogleSheetsMode(true);
+        console.log('Google Sheets connected successfully');
         
-        // Check if we need to migrate from localStorage
-        const localUsers = JSON.parse(localStorage.getItem('suryabank_users') || '[]');
-        const localTransactions = JSON.parse(localStorage.getItem('suryabank_transactions') || '[]');
+        toast({
+          title: "Cloud Sync Connected",
+          description: "Your data will now sync with Google Sheets",
+        });
+        
+        // Check if we need to migrate local data
+        const localUsers = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+        const localTransactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
         
         if (localUsers.length > 0 || localTransactions.length > 0) {
-          console.log('Migrating data from localStorage to Google Sheets...');
-          await GoogleSheetsBankService.migrateFromLocalStorage();
-          toast({
-            title: "Data Migrated",
-            description: "Your data has been successfully migrated to Google Sheets",
-          });
+          console.log('Local data found, will sync to cloud when admin migrates');
         }
-        
-        setIsGoogleSheetsMode(true);
       } catch (error) {
-        console.warn('Google Sheets not available, falling back to localStorage:', error);
+        console.warn('Google Sheets connection failed, running in offline mode:', error);
         setIsGoogleSheetsMode(false);
+        
         toast({
           title: "Offline Mode",
-          description: "Using local storage. Connect Google Sheets for cloud sync.",
-          variant: "destructive"
+          description: "Running with local storage. Connect Google Sheets in admin panel for cloud sync.",
+          variant: "default"
         });
       }
     };
 
-    initializeGoogleSheets();
+    initializeDataSources();
   }, []);
 
   // Load transactions for the current user
@@ -67,48 +77,50 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Get all transactions for the current user
   const getTransactions = async (): Promise<void> => {
+    if (!user) return;
+    
     setLoading(true);
     try {
-      if (isGoogleSheetsMode && user) {
-        const userTransactions = await GoogleSheetsBankService.getUserTransactions(user.accountNumber);
-        setTransactions(userTransactions);
-      } else {
-        // Fallback to localStorage
-        const allTransactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
-        const userTransactions = allTransactions.filter((t: Transaction) => 
-          t.fromAccount === user?.accountNumber || t.toAccount === user?.accountNumber
-        );
-        setTransactions(userTransactions);
+      let userTransactions: Transaction[] = [];
+      
+      if (isGoogleSheetsMode) {
+        try {
+          userTransactions = await GoogleSheetsBankService.getUserTransactions(user.accountNumber);
+          console.log(`Loaded ${userTransactions.length} transactions from Google Sheets`);
+        } catch (error) {
+          console.warn('Failed to load from Google Sheets, falling back to localStorage:', error);
+          setIsGoogleSheetsMode(false);
+          // Fall through to localStorage loading
+        }
       }
+      
+      if (!isGoogleSheetsMode || userTransactions.length === 0) {
+        // Load from localStorage
+        const allTransactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
+        userTransactions = allTransactions.filter((t: Transaction) => 
+          t.fromAccount === user.accountNumber || t.toAccount === user.accountNumber
+        );
+        console.log(`Loaded ${userTransactions.length} transactions from localStorage`);
+      }
+      
+      setTransactions(userTransactions);
     } catch (error) {
       console.error('Failed to load transactions:', error);
-      // Fallback to localStorage on error
-      try {
-        const allTransactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
-        const userTransactions = allTransactions.filter((t: Transaction) => 
-          t.fromAccount === user?.accountNumber || t.toAccount === user?.accountNumber
-        );
-        setTransactions(userTransactions);
-      } catch (fallbackError) {
-        toast({
-          title: "Error",
-          description: "Failed to load transactions",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: "Failed to load transactions",
+        variant: "destructive"
+      });
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Update user balance
+  // Update user balance in both Google Sheets and localStorage
   const updateUserBalance = async (accountNumber: string, newBalance: number): Promise<void> => {
     try {
-      if (isGoogleSheetsMode) {
-        await GoogleSheetsBankService.updateUserBalance(accountNumber, newBalance);
-      }
-      
-      // Also update localStorage for fallback
+      // Always update localStorage first for reliability
       const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
       const updatedUsers = users.map((u: User) => {
         if (u.accountNumber === accountNumber) {
@@ -116,8 +128,18 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         return u;
       });
-      
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+      
+      // Try to sync with Google Sheets if available
+      if (isGoogleSheetsMode) {
+        try {
+          await GoogleSheetsBankService.updateUserBalance(accountNumber, newBalance);
+          console.log('Balance synced to Google Sheets');
+        } catch (error) {
+          console.warn('Failed to sync balance to Google Sheets, continuing with local storage:', error);
+          // Don't throw error, local storage update succeeded
+        }
+      }
       
       // Update current user session if it's the logged-in user
       if (user && user.accountNumber === accountNumber) {
@@ -130,7 +152,7 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Create and save a new transaction
+  // Create and save a new transaction in both Google Sheets and localStorage
   const saveTransaction = async (
     type: 'deposit' | 'withdrawal' | 'transfer',
     amount: number,
@@ -138,7 +160,7 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toAccount?: string
   ): Promise<void> => {
     const newTransaction: Transaction = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       type,
       amount,
       fromAccount,
@@ -148,17 +170,24 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     try {
-      if (isGoogleSheetsMode) {
-        await GoogleSheetsBankService.addTransaction(newTransaction);
-      }
-      
-      // Also save to localStorage for fallback
+      // Always save to localStorage first for reliability
       const allTransactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
       allTransactions.push(newTransaction);
       localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(allTransactions));
       
-      // Update local state
+      // Update local state immediately
       setTransactions(prev => [...prev, newTransaction]);
+      
+      // Try to sync with Google Sheets if available
+      if (isGoogleSheetsMode) {
+        try {
+          await GoogleSheetsBankService.addTransaction(newTransaction);
+          console.log('Transaction synced to Google Sheets');
+        } catch (error) {
+          console.warn('Failed to sync transaction to Google Sheets, continuing with local storage:', error);
+          // Don't throw error, local storage save succeeded
+        }
+      }
     } catch (error) {
       console.error('Failed to save transaction:', error);
       throw error;

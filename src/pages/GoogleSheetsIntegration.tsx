@@ -181,7 +181,7 @@ const GoogleSheetsIntegration = () => {
               <p className="text-muted-foreground">Connect and sync data with Google Sheets</p>
             </div>
           </div>
-          <GoogleSheetsStatus />
+          <GoogleSheetsStatus isConnected={hasAdminAccess} />
         </div>
 
         {hasAdminAccess && (

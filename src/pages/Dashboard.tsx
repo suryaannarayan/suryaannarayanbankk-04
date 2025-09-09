@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useBank } from '@/context/BankContext';
 import { formatCurrency } from '@/lib/utils';
 import TransactionItem from '@/components/ui/TransactionItem';
+import OfflineModeStatus from '@/components/ui/OfflineModeStatus';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -272,6 +273,8 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+        
+        <OfflineModeStatus />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="md:col-span-2">
