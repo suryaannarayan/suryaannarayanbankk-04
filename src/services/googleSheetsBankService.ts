@@ -219,12 +219,18 @@ export class GoogleSheetsBankService {
    */
   static async migrateFromLocalStorage(): Promise<void> {
     try {
+      console.log('Starting migration from localStorage to Google Sheets...');
+      
       // Get data from localStorage
       const localUsers = JSON.parse(localStorage.getItem('suryabank_users') || '[]');
       const localTransactions = JSON.parse(localStorage.getItem('suryabank_transactions') || '[]');
+      const localCreditCards = JSON.parse(localStorage.getItem('suryabank_credit_cards') || '[]');
+
+      console.log(`Found ${localUsers.length} users, ${localTransactions.length} transactions, ${localCreditCards.length} credit cards in localStorage`);
 
       // Initialize sheets first
       await this.initializeSheets();
+      console.log('Sheets initialized successfully');
 
       // Migrate users
       if (localUsers.length > 0) {

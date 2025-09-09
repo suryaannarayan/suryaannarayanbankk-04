@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { BankContextType, Transaction, User } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/hooks/use-toast";

@@ -22,10 +22,25 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     if (!GOOGLE_SHEETS_API_KEY) {
-      throw new Error('Google Sheets API key is not configured');
+      console.error('Google Sheets API key is not configured');
+      return new Response(
+        JSON.stringify({ error: 'Google Sheets API key is not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
     }
 
-    const { spreadsheetId, range, action, values }: GoogleSheetsRequest = await req.json();
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('Invalid JSON in request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const { spreadsheetId, range, action, values }: GoogleSheetsRequest = requestBody;
 
     if (!spreadsheetId || !range || !action) {
       return new Response(
@@ -47,8 +62,16 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Google Sheets API Error:', errorText);
-        throw new Error(`Google Sheets API Error: ${response.status} ${errorText}`);
+        console.error('Google Sheets API Read Error:', response.status, errorText);
+        return new Response(
+          JSON.stringify({ 
+            error: `Google Sheets API Error: ${response.status}`,
+            details: errorText,
+            spreadsheetId,
+            range
+          }),
+          { status: response.status, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
       }
 
       const data = await response.json();
@@ -80,8 +103,17 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Google Sheets API Error:', errorText);
-        throw new Error(`Google Sheets API Error: ${response.status} ${errorText}`);
+        console.error('Google Sheets API Write Error:', response.status, errorText);
+        return new Response(
+          JSON.stringify({ 
+            error: `Google Sheets API Error: ${response.status}`,
+            details: errorText,
+            spreadsheetId,
+            range,
+            valuesCount: values?.length || 0
+          }),
+          { status: response.status, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
       }
 
       const data = await response.json();
