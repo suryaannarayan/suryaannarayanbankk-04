@@ -21,6 +21,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log('Request method:', req.method);
+    console.log('Request headers:', Object.fromEntries(req.headers));
+    
     if (!GOOGLE_SHEETS_API_KEY) {
       console.error('Google Sheets API key is not configured');
       return new Response(
@@ -29,13 +32,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check if request has a body
+    const contentType = req.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('Invalid content-type. Expected application/json, got:', contentType);
+      return new Response(
+        JSON.stringify({ error: 'Content-Type must be application/json' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
     let requestBody;
     try {
-      requestBody = await req.json();
+      const bodyText = await req.text();
+      console.log('Request body text:', bodyText);
+      
+      if (!bodyText.trim()) {
+        console.error('Empty request body');
+        return new Response(
+          JSON.stringify({ error: 'Request body cannot be empty' }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+      
+      requestBody = JSON.parse(bodyText);
+      console.log('Parsed request body:', requestBody);
     } catch (parseError) {
       console.error('Invalid JSON in request body:', parseError);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        JSON.stringify({ error: 'Invalid JSON in request body', details: parseError.message }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
