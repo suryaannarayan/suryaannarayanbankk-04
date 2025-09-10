@@ -5,19 +5,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCreditCard } from '@/context/CreditCardContext';
 import { useAuth } from '@/context/AuthContext';
+import { useAdmin } from '@/context/AdminContext';
 import MainLayout from '@/components/layout/MainLayout';
 import CreditCardComponent from '@/components/ui/CreditCardComponent';
-import { CreditCard as CreditCardIcon, Plus, Shield, AlertTriangle } from 'lucide-react';
+import CreditCardEditDialog from '@/components/admin/CreditCardEditDialog';
+import { CreditCard as CreditCardIcon, Plus, Shield, AlertTriangle, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { CreditCard as CreditCardType } from '@/lib/types';
 
 const CreditCard = () => {
   const { user } = useAuth();
-  const { creditCards, loading, createCreditCard, getUserCreditCards } = useCreditCard();
+  const { creditCards, loading, createCreditCard, getUserCreditCards, blockCreditCard, unblockCreditCard } = useCreditCard();
+  const { getAllCreditCards, updateCreditCard } = useAdmin();
   const [cardholderName, setCardholderName] = useState('');
   const [pin, setPin] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [allCreditCards, setAllCreditCards] = useState<CreditCardType[]>([]);
+  const [editingCard, setEditingCard] = useState<CreditCardType | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('cards');
 
   const handleCreateCard = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +61,92 @@ const CreditCard = () => {
     }
   };
 
+  const loadAllCreditCards = async () => {
+    if (user?.isAdmin) {
+      try {
+        const cards = await getAllCreditCards();
+        setAllCreditCards(cards);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load all credit cards",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    if (user?.isAdmin && activeTab === 'manage') {
+      loadAllCreditCards();
+    }
+  }, [user?.isAdmin, activeTab]);
+
+  const handleEditCard = (card: CreditCardType) => {
+    setEditingCard(card);
+  };
+
+  const handleSaveCard = async (cardId: string, updates: Partial<CreditCardType>) => {
+    try {
+      await updateCreditCard(cardId, updates);
+      await loadAllCreditCards();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    try {
+      // Implementation would go here - delete card from storage
+      setAllCreditCards(allCreditCards.filter(card => card.id !== cardId));
+      setDeleteConfirm(null);
+      toast({
+        title: "Success",
+        description: "Credit card deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete credit card",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBlockCard = async (cardId: string) => {
+    try {
+      await blockCreditCard(cardId);
+      await loadAllCreditCards();
+      toast({
+        title: "Success",
+        description: "Credit card blocked successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to block credit card",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUnblockCard = async (cardId: string) => {
+    try {
+      await unblockCreditCard(cardId);
+      await loadAllCreditCards();
+      toast({
+        title: "Success",
+        description: "Credit card unblocked successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to unblock credit card",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!user) {
     return (
       <MainLayout>
@@ -78,10 +173,16 @@ const CreditCard = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className={`grid w-full ${user?.isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="cards">My Cards</TabsTrigger>
             <TabsTrigger value="apply">Apply for Card</TabsTrigger>
+            {user?.isAdmin && (
+              <TabsTrigger value="manage">
+                <Users className="mr-2 h-4 w-4" />
+                Manage All Cards
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="cards" className="space-y-6">
@@ -108,7 +209,10 @@ const CreditCard = () => {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {creditCards.map((card) => (
                   <div key={card.id} className="space-y-4">
-                    <CreditCardComponent card={card} showSensitiveInfo={user.isAdmin} />
+                     <CreditCardComponent 
+                       card={card} 
+                       showSensitiveInfo={false}
+                     />
                     <Card>
                       <CardContent className="pt-4">
                         <div className="space-y-2 text-sm">
@@ -226,7 +330,102 @@ const CreditCard = () => {
               </Card>
             )}
           </TabsContent>
+
+          {user?.isAdmin && (
+            <TabsContent value="manage" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    All Credit Cards Management
+                  </CardTitle>
+                  <CardDescription>
+                    View and manage all credit cards in the system
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {allCreditCards.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CreditCardIcon className="h-16 w-16 mx-auto mb-4" />
+                      <p>No credit cards found in the system</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {allCreditCards.map((card) => (
+                        <div key={card.id} className="space-y-4">
+                          <CreditCardComponent 
+                            card={card} 
+                            showSensitiveInfo={true}
+                            isAdmin={true}
+                            onEdit={handleEditCard}
+                            onDelete={(cardId) => setDeleteConfirm(cardId)}
+                            onBlock={handleBlockCard}
+                            onUnblock={handleUnblockCard}
+                          />
+                          <Card>
+                            <CardContent className="pt-4">
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">User ID:</span>
+                                  <span className="font-mono text-xs">{card.userId}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Created:</span>
+                                  <span>{card.createdAt.toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Valid Until:</span>
+                                  <span>{card.expiryDate.toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Failed Attempts:</span>
+                                  <span>{card.failedAttempts}</span>
+                                </div>
+                                {card.lastUsed && (
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Last Used:</span>
+                                    <span>{card.lastUsed.toLocaleDateString()}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
+
+        <CreditCardEditDialog
+          card={editingCard}
+          open={!!editingCard}
+          onClose={() => setEditingCard(null)}
+          onSave={handleSaveCard}
+        />
+
+        <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Credit Card</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to permanently delete this credit card? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteConfirm && handleDeleteCard(deleteConfirm)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );

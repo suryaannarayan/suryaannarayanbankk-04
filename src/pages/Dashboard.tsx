@@ -40,7 +40,7 @@ const Dashboard = () => {
     }
     
     getTransactions();
-  }, [user, navigate, getTransactions]);
+  }, [user, navigate]);
   
   const handleRefresh = async () => {
     if (isRefreshing) return;
