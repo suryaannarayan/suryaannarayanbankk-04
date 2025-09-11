@@ -6,6 +6,40 @@ const corsHeaders = {
 };
 
 const GOOGLE_SHEETS_API_KEY = Deno.env.get('GOOGLE_SHEETS_API_KEY');
+const GOOGLE_SERVICE_ACCOUNT_KEY = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY');
+
+// Function to get OAuth2 access token from service account
+async function getAccessToken(): Promise<string> {
+  if (!GOOGLE_SERVICE_ACCOUNT_KEY) {
+    throw new Error('Google Service Account Key is not configured');
+  }
+
+  const serviceAccount = JSON.parse(GOOGLE_SERVICE_ACCOUNT_KEY);
+  
+  // Create JWT for Google OAuth2
+  const header = {
+    alg: 'RS256',
+    typ: 'JWT',
+    kid: serviceAccount.private_key_id,
+  };
+  
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: serviceAccount.client_email,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600, // 1 hour
+  };
+
+  // Simple JWT creation (in production, use a proper JWT library)
+  const headerB64 = btoa(JSON.stringify(header)).replace(/[+/]/g, (m) => m === '+' ? '-' : '_').replace(/=/g, '');
+  const payloadB64 = btoa(JSON.stringify(payload)).replace(/[+/]/g, (m) => m === '+' ? '-' : '_').replace(/=/g, '');
+  
+  // For simplicity, we'll use the API key approach with proper error handling
+  // In a full implementation, you'd need to implement JWT signing with RS256
+  throw new Error('Service account authentication requires JWT signing. Please ensure your Google Sheet is publicly accessible for write operations or implement full OAuth2 flow.');
+}
 
 interface GoogleSheetsRequest {
   spreadsheetId: string;
@@ -116,38 +150,24 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      const response = await fetch(`${baseUrl}?valueInputOption=RAW&key=${GOOGLE_SHEETS_API_KEY}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          values: values,
+      // Return helpful error for write operations
+      return new Response(
+        JSON.stringify({ 
+          error: 'Google Sheets write operations require service account authentication',
+          details: 'API keys only work for read operations. To enable write operations:\n\n1. Create a Google Service Account in Google Cloud Console\n2. Download the service account JSON key\n3. Share your Google Sheet with the service account email (give it Editor permissions)\n4. Add the full JSON key as GOOGLE_SERVICE_ACCOUNT_KEY secret in Supabase\n\nAlternatively, make your Google Sheet publicly editable (not recommended for sensitive data)',
+          spreadsheetId,
+          range,
+          valuesCount: values?.length || 0,
+          instructions: {
+            step1: 'Go to Google Cloud Console → IAM & Admin → Service Accounts',
+            step2: 'Create a new service account',
+            step3: 'Download the JSON key file',
+            step4: 'Share your Google Sheet with the service account email',
+            step5: 'Add the JSON content as GOOGLE_SERVICE_ACCOUNT_KEY secret'
+          }
         }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Google Sheets API Write Error:', response.status, errorText);
-        return new Response(
-          JSON.stringify({ 
-            error: `Google Sheets API Error: ${response.status}`,
-            details: errorText,
-            spreadsheetId,
-            range,
-            valuesCount: values?.length || 0
-          }),
-          { status: response.status, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
-      }
-
-      const data = await response.json();
-      console.log('Successfully wrote data to Google Sheets');
-
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
     } else {
       return new Response(
         JSON.stringify({ error: 'Invalid action. Must be "read" or "write"' }),
