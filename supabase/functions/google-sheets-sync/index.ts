@@ -8,6 +8,35 @@ const corsHeaders = {
 const GOOGLE_SHEETS_API_KEY = Deno.env.get('GOOGLE_SHEETS_API_KEY');
 const GOOGLE_SERVICE_ACCOUNT_KEY = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY');
 
+// Helpers for JWT signing and PEM parsing
+function base64UrlEncode(input: Uint8Array | string) {
+  let str: string;
+  if (typeof input === 'string') {
+    str = btoa(input);
+  } else {
+    let binary = '';
+    for (let i = 0; i < input.byteLength; i++) {
+      binary += String.fromCharCode(input[i]);
+    }
+    str = btoa(binary);
+  }
+  return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const b64 = pem
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\n/g, '')
+    .trim();
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 // Function to get OAuth2 access token from service account
 async function getAccessToken(): Promise<string> {
   if (!GOOGLE_SERVICE_ACCOUNT_KEY) {
@@ -16,12 +45,7 @@ async function getAccessToken(): Promise<string> {
 
   const serviceAccount = JSON.parse(GOOGLE_SERVICE_ACCOUNT_KEY);
   
-  // Create JWT for Google OAuth2
-  const header = {
-    alg: 'RS256',
-    typ: 'JWT',
-    kid: serviceAccount.private_key_id,
-  };
+  const header = { alg: 'RS256', typ: 'JWT' };
   
   const now = Math.floor(Date.now() / 1000);
   const payload = {
@@ -32,13 +56,45 @@ async function getAccessToken(): Promise<string> {
     exp: now + 3600, // 1 hour
   };
 
-  // Simple JWT creation (in production, use a proper JWT library)
-  const headerB64 = btoa(JSON.stringify(header)).replace(/[+/]/g, (m) => m === '+' ? '-' : '_').replace(/=/g, '');
-  const payloadB64 = btoa(JSON.stringify(payload)).replace(/[+/]/g, (m) => m === '+' ? '-' : '_').replace(/=/g, '');
+  const encoder = new TextEncoder();
+  const headerB64u = base64UrlEncode(JSON.stringify(header));
+  const payloadB64u = base64UrlEncode(JSON.stringify(payload));
+  const unsignedToken = `${headerB64u}.${payloadB64u}`;
   
-  // For simplicity, we'll use the API key approach with proper error handling
-  // In a full implementation, you'd need to implement JWT signing with RS256
-  throw new Error('Service account authentication requires JWT signing. Please ensure your Google Sheet is publicly accessible for write operations or implement full OAuth2 flow.');
+  const keyData = pemToArrayBuffer(serviceAccount.private_key);
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8',
+    keyData,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = new Uint8Array(
+    await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, encoder.encode(unsignedToken))
+  );
+  const jwt = `${unsignedToken}.${base64UrlEncode(signature)}`;
+
+  const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }).toString(),
+  });
+
+  if (!tokenResp.ok) {
+    const errText = await tokenResp.text();
+    console.error('Google OAuth token error:', tokenResp.status, errText);
+    throw new Error(`Failed to obtain access token: ${tokenResp.status} ${errText}`);
+  }
+
+  const tokenJson = await tokenResp.json();
+  if (!tokenJson.access_token) {
+    throw new Error('No access_token in Google OAuth response');
+  }
+  return tokenJson.access_token as string;
 }
 
 interface GoogleSheetsRequest {
@@ -142,7 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     } else if (action === 'write') {
-      // Write data to Google Sheets
+      // Write data to Google Sheets using Service Account OAuth
       if (!values) {
         return new Response(
           JSON.stringify({ error: 'Values are required for write action' }),
@@ -150,24 +206,48 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      // Return helpful error for write operations
-      return new Response(
-        JSON.stringify({ 
-          error: 'Google Sheets write operations require service account authentication',
-          details: 'API keys only work for read operations. To enable write operations:\n\n1. Create a Google Service Account in Google Cloud Console\n2. Download the service account JSON key\n3. Share your Google Sheet with the service account email (give it Editor permissions)\n4. Add the full JSON key as GOOGLE_SERVICE_ACCOUNT_KEY secret in Supabase\n\nAlternatively, make your Google Sheet publicly editable (not recommended for sensitive data)',
-          spreadsheetId,
-          range,
-          valuesCount: values?.length || 0,
-          instructions: {
-            step1: 'Go to Google Cloud Console → IAM & Admin → Service Accounts',
-            step2: 'Create a new service account',
-            step3: 'Download the JSON key file',
-            step4: 'Share your Google Sheet with the service account email',
-            step5: 'Add the JSON content as GOOGLE_SERVICE_ACCOUNT_KEY secret'
-          }
-        }),
-        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+      if (!GOOGLE_SERVICE_ACCOUNT_KEY) {
+        return new Response(
+          JSON.stringify({
+            error: 'Service account required for write operations',
+            details: 'Add GOOGLE_SERVICE_ACCOUNT_KEY in Supabase Functions secrets and share the Sheet with that service account (Editor).',
+          }),
+          { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      const accessToken = await getAccessToken();
+      const response = await fetch(`${baseUrl}?valueInputOption=RAW`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ values }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Google Sheets API Write Error:', response.status, errorText);
+        return new Response(
+          JSON.stringify({
+            error: `Google Sheets API Error: ${response.status}`,
+            details: errorText,
+            spreadsheetId,
+            range,
+            valuesCount: values?.length || 0,
+          }),
+          { status: response.status, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      const data = await response.json();
+      console.log('Successfully wrote data to Google Sheets');
+
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
     } else {
       return new Response(
         JSON.stringify({ error: 'Invalid action. Must be "read" or "write"' }),
