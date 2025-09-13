@@ -8,6 +8,9 @@ export class GoogleSheetsBankService {
   // Sheet ranges
   private static USERS_RANGE = 'Users!A:H';
   private static TRANSACTIONS_RANGE = 'Transactions!A:H';
+  private static CREDIT_CARDS_RANGE = 'CreditCards!A:M';
+  private static COUPONS_RANGE = 'Coupons!A:H';
+  private static PREMIUM_APPLICATIONS_RANGE = 'PremiumApplications!A:J';
   
   /**
    * Initialize the spreadsheet with headers if empty
@@ -30,6 +33,33 @@ export class GoogleSheetsBankService {
           ['ID', 'Type', 'Amount', 'FromAccount', 'ToAccount', 'Description', 'Timestamp', 'Status']
         ];
         await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'Transactions!A1:H1', transactionHeaders);
+      }
+
+      // Initialize Credit Cards sheet
+      const creditCardsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'CreditCards!A1:M1');
+      if (!creditCardsData?.values || creditCardsData.values.length === 0) {
+        const creditCardHeaders = [
+          ['ID', 'UserId', 'CardNumber', 'CardholderName', 'CVV', 'ExpiryDate', 'PIN', 'IsActive', 'IsBlocked', 'FailedAttempts', 'PermanentlyBlocked', 'ValidityYears', 'IsPremium']
+        ];
+        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'CreditCards!A1:M1', creditCardHeaders);
+      }
+
+      // Initialize Coupons sheet
+      const couponsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'Coupons!A1:H1');
+      if (!couponsData?.values || couponsData.values.length === 0) {
+        const couponHeaders = [
+          ['Code', 'Type', 'Discount', 'Value', 'ExpiryDate', 'UserId', 'CreatedAt', 'Fee']
+        ];
+        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'Coupons!A1:H1', couponHeaders);
+      }
+
+      // Initialize Premium Applications sheet
+      const premiumAppsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'PremiumApplications!A1:J1');
+      if (!premiumAppsData?.values || premiumAppsData.values.length === 0) {
+        const premiumHeaders = [
+          ['ID', 'UserId', 'Username', 'AccountNumber', 'CustomCard', 'CustomCardNumber', 'CustomCVV', 'FeesPaid', 'Status', 'AppliedAt']
+        ];
+        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'PremiumApplications!A1:J1', premiumHeaders);
       }
     } catch (error) {
       console.error('Failed to initialize sheets:', error);
@@ -289,6 +319,117 @@ export class GoogleSheetsBankService {
       console.log('Migration completed successfully');
     } catch (error) {
       console.error('Migration failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync all credit card data to Google Sheets
+   */
+  static async syncCreditCardsToSheets(): Promise<void> {
+    try {
+      const localCreditCards = JSON.parse(localStorage.getItem('credit_cards') || '[]');
+      
+      if (localCreditCards.length > 0) {
+        const creditCardSheetData = GoogleSheetsUtils.objectsToSheetValues(localCreditCards.map((card: any) => ({
+          ID: card.id,
+          UserId: card.userId,
+          CardNumber: card.cardNumber,
+          CardholderName: card.cardholderName,
+          CVV: card.cvv,
+          ExpiryDate: new Date(card.expiryDate).toISOString(),
+          PIN: card.pin,
+          IsActive: card.isActive.toString(),
+          IsBlocked: card.isBlocked.toString(),
+          FailedAttempts: card.failedAttempts.toString(),
+          PermanentlyBlocked: card.permanentlyBlocked.toString(),
+          ValidityYears: card.validityYears.toString(),
+          IsPremium: (card.isPremium || false).toString()
+        })));
+
+        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, this.CREDIT_CARDS_RANGE, creditCardSheetData);
+      }
+    } catch (error) {
+      console.error('Failed to sync credit cards to sheets:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync all coupon data to Google Sheets
+   */
+  static async syncCouponsToSheets(): Promise<void> {
+    try {
+      const localCoupons = JSON.parse(localStorage.getItem('user_coupons') || '[]');
+      
+      if (localCoupons.length > 0) {
+        const couponSheetData = GoogleSheetsUtils.objectsToSheetValues(localCoupons.map((coupon: any) => ({
+          Code: coupon.code,
+          Type: coupon.type || 'discount',
+          Discount: coupon.discount || '',
+          Value: coupon.value || '',
+          ExpiryDate: coupon.expiryDate,
+          UserId: coupon.userId,
+          CreatedAt: coupon.createdAt,
+          Fee: coupon.fee || 0
+        })));
+
+        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, this.COUPONS_RANGE, couponSheetData);
+      }
+    } catch (error) {
+      console.error('Failed to sync coupons to sheets:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync all premium application data to Google Sheets
+   */
+  static async syncPremiumApplicationsToSheets(): Promise<void> {
+    try {
+      const localApplications = JSON.parse(localStorage.getItem('premium_applications') || '[]');
+      
+      if (localApplications.length > 0) {
+        const applicationSheetData = GoogleSheetsUtils.objectsToSheetValues(localApplications.map((app: any) => ({
+          ID: app.id,
+          UserId: app.userId,
+          Username: app.username,
+          AccountNumber: app.accountNumber,
+          CustomCard: app.customCard ? 'true' : 'false',
+          CustomCardNumber: app.customCardNumber || '',
+          CustomCVV: app.customCVV || '',
+          FeesPaid: app.feesPaid || 0,
+          Status: app.status || 'pending',
+          AppliedAt: app.appliedAt
+        })));
+
+        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, this.PREMIUM_APPLICATIONS_RANGE, applicationSheetData);
+      }
+    } catch (error) {
+      console.error('Failed to sync premium applications to sheets:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Complete migration and sync of all data to Google Sheets
+   */
+  static async fullDataSync(): Promise<void> {
+    try {
+      console.log('Starting complete data sync to Google Sheets...');
+      
+      // Initialize all sheets first
+      await this.initializeSheets();
+      
+      // Sync all data types
+      await this.migrateFromLocalStorage(); // Users and transactions
+      await this.syncCreditCardsToSheets();
+      await this.syncCouponsToSheets();
+      await this.syncPremiumApplicationsToSheets();
+      
+      console.log('Complete data sync finished successfully');
+    } catch (error) {
+      console.error('Complete data sync failed:', error);
       throw error;
     }
   }

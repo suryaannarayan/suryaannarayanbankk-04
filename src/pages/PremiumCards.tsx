@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useBank } from '@/context/BankContext';
 import { Sparkles, Star, Crown, Gift, Copy, Calendar, CreditCard, DollarSign } from 'lucide-react';
+import { saveCouponToSheets, savePremiumApplicationToSheets } from '@/utils/dataSyncUtils';
 
 const PremiumCards = () => {
   const { user } = useAuth();
@@ -22,24 +23,35 @@ const PremiumCards = () => {
   const [wantCustomCard, setWantCustomCard] = useState(false);
 
   const generateCoupon = async () => {
-    // Check if this is the first coupon for this user
+    // Check coupon count limit (max 3 total: 1 free + 2 paid)
     const existingCoupons = JSON.parse(localStorage.getItem('user_coupons') || '[]');
-    const userCoupons = existingCoupons.filter((coupon: any) => coupon.userId === user?.id);
-    const isFirstCoupon = userCoupons.length === 0;
+    const userCoupons = existingCoupons.filter((coupon: any) => coupon.userId === user?.id && coupon.type !== 'custom');
     
-    // If not first coupon, charge 10 rupees
+    if (userCoupons.length >= 3) {
+      toast({
+        title: "Coupon Limit Reached",
+        description: "You can only generate 3 discount coupons total (1 free + 2 paid)",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const isFirstCoupon = userCoupons.length === 0;
+    const requiredFee = isFirstCoupon ? 0 : 50; // First free, then 50 rupees each
+    
+    // If not first coupon, charge 50 rupees
     if (!isFirstCoupon) {
-      if (!user || user.balance < 10) {
+      if (!user || user.balance < requiredFee) {
         toast({
           title: "Insufficient Balance",
-          description: "You need ₹10 to generate additional coupons",
+          description: "You need ₹50 to generate additional discount coupons",
           variant: "destructive"
         });
         return;
       }
       
       try {
-        await withdraw(10);
+        await withdraw(requiredFee);
       } catch (error) {
         toast({
           title: "Payment Failed",
@@ -57,18 +69,29 @@ const PremiumCards = () => {
     setGeneratedCoupon(couponCode);
     setCouponExpiry(expiryDate);
     
-    existingCoupons.push({
+    const newCoupon = {
       code: couponCode,
       discount: 20,
       expiryDate: expiryDate.toISOString(),
       userId: user?.id,
-      createdAt: new Date().toISOString()
-    });
+      createdAt: new Date().toISOString(),
+      type: 'discount',
+      fee: requiredFee
+    };
+    
+    existingCoupons.push(newCoupon);
     localStorage.setItem('user_coupons', JSON.stringify(existingCoupons));
+    
+    // Save to Google Sheets
+    try {
+      await saveCouponToSheets(newCoupon);
+    } catch (error) {
+      console.error('Failed to save coupon to Google Sheets:', error);
+    }
     
     toast({
       title: "Coupon Generated!",
-      description: `Your 20% discount coupon ${couponCode} is ready to use!${!isFirstCoupon ? ' (₹10 charged)' : ' (First coupon free!)'}`,
+      description: `Your 20% discount coupon ${couponCode} is ready to use!${!isFirstCoupon ? ` (₹${requiredFee} charged)` : ' (First coupon free!)'}`,
     });
   };
 
@@ -99,15 +122,24 @@ const PremiumCards = () => {
       expiryDate.setMonth(expiryDate.getMonth() + 3);
       
       const existingCoupons = JSON.parse(localStorage.getItem('user_coupons') || '[]');
-      existingCoupons.push({
+      const newCustomCoupon = {
         code: couponCode,
         value: customCouponAmount,
         expiryDate: expiryDate.toISOString(),
         userId: user?.id,
         createdAt: new Date().toISOString(),
         type: 'custom'
-      });
+      };
+      
+      existingCoupons.push(newCustomCoupon);
       localStorage.setItem('user_coupons', JSON.stringify(existingCoupons));
+      
+      // Save to Google Sheets
+      try {
+        await saveCouponToSheets(newCustomCoupon);
+      } catch (error) {
+        console.error('Failed to save custom coupon to Google Sheets:', error);
+      }
       
       toast({
         title: "Custom Coupon Created!",
@@ -178,8 +210,7 @@ const PremiumCards = () => {
       }
       
       // Save application to localStorage
-      const applications = JSON.parse(localStorage.getItem('premium_applications') || '[]');
-      applications.push({
+      const application = {
         id: Date.now().toString(),
         userId: user?.id,
         username: user?.username,
@@ -190,8 +221,18 @@ const PremiumCards = () => {
         customCardNumber: wantCustomCard ? customCardNumber : null,
         customCVV: wantCustomCard ? customCVV : null,
         feesPaid: totalFee
-      });
+      };
+      
+      const applications = JSON.parse(localStorage.getItem('premium_applications') || '[]');
+      applications.push(application);
       localStorage.setItem('premium_applications', JSON.stringify(applications));
+      
+      // Save to Google Sheets
+      try {
+        await savePremiumApplicationToSheets(application);
+      } catch (error) {
+        console.error('Failed to save premium application to Google Sheets:', error);
+      }
       
       toast({
         title: "Application Submitted!",
@@ -319,15 +360,28 @@ const PremiumCards = () => {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Generate a 20% discount coupon for your ecommerce purchases
+                Generate exclusive 20% discount coupons (Maximum 3 total)
               </p>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4" />
                 <span>Valid for 3 months</span>
               </div>
-              <div className="bg-yellow-100 p-2 rounded text-xs text-yellow-800">
-                First coupon free, then ₹10 per coupon
-              </div>
+              {(() => {
+                const userDiscountCoupons = JSON.parse(localStorage.getItem('user_coupons') || '[]')
+                  .filter((coupon: any) => coupon.userId === user?.id && coupon.type !== 'custom');
+                const remaining = 3 - userDiscountCoupons.length;
+                const isFirstFree = userDiscountCoupons.length === 0;
+                
+                return (
+                  <div className={`p-2 rounded text-xs ${remaining > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {remaining > 0 ? (
+                      isFirstFree ? 'First coupon FREE! Then ₹50 per coupon' : `₹50 per coupon - ${remaining} remaining`
+                    ) : (
+                      'Maximum limit reached (3/3 coupons used)'
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             
             {generatedCoupon && (
@@ -356,9 +410,21 @@ const PremiumCards = () => {
             
             <Button 
               onClick={generateCoupon}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              disabled={(() => {
+                const userDiscountCoupons = JSON.parse(localStorage.getItem('user_coupons') || '[]')
+                  .filter((coupon: any) => coupon.userId === user?.id && coupon.type !== 'custom');
+                return userDiscountCoupons.length >= 3;
+              })()}
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50"
             >
-              Generate 20% Coupon
+              {(() => {
+                const userDiscountCoupons = JSON.parse(localStorage.getItem('user_coupons') || '[]')
+                  .filter((coupon: any) => coupon.userId === user?.id && coupon.type !== 'custom');
+                
+                if (userDiscountCoupons.length >= 3) return 'Limit Reached (3/3)';
+                if (userDiscountCoupons.length === 0) return 'Generate Free 20% Coupon';
+                return `Generate 20% Coupon (₹50) - ${3 - userDiscountCoupons.length} left`;
+              })()}
             </Button>
           </CardContent>
         </Card>
