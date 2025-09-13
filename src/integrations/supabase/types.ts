@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_settings_audit: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          setting_key: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          setting_key?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          setting_key?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       credit_card_complaints: {
         Row: {
           admin_notes: string | null
@@ -100,7 +133,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
