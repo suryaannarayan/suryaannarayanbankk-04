@@ -172,19 +172,32 @@ const CreditCardManagement = () => {
 
   const handleDeleteCard = async (cardId: string) => {
     try {
+      // CRITICAL: Create backup before any deletion
+      try {
+        const { DataProtectionService } = await import('@/utils/dataProtectionService');
+        await DataProtectionService.createInstantBackup();
+      } catch (backupError) {
+        console.error('Backup failed before card deletion:', backupError);
+      }
+      
+      // Instead of deleting, mark card as archived but preserve data
       const existingCards = JSON.parse(localStorage.getItem('suryabank_credit_cards') || '[]');
-      const filteredCards = existingCards.filter((card: any) => card.id !== cardId);
-      localStorage.setItem('suryabank_credit_cards', JSON.stringify(filteredCards));
+      const updatedCards = existingCards.map((card: any) => 
+        card.id === cardId 
+          ? { ...card, deletedAt: new Date().toISOString(), isActive: false }
+          : card
+      );
+      localStorage.setItem('suryabank_credit_cards', JSON.stringify(updatedCards));
       await loadAllCards();
       
       toast({
-        title: "Card Deleted",
-        description: "Credit card has been deleted successfully",
+        title: "Card Archived",
+        description: "Credit card has been archived successfully (data preserved)",
       });
     } catch (error) {
       toast({
-        title: "Delete Failed",
-        description: "Failed to delete credit card",
+        title: "Archive Failed",
+        description: "Failed to archive credit card",
         variant: "destructive"
       });
     }

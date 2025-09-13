@@ -20,6 +20,10 @@ export interface User {
   district?: string;
   townVillage?: string;
   fatherName?: string;
+  // Data protection fields
+  deletedAt?: string;
+  isActive?: boolean;
+  archivedAt?: string;
 }
 
 export interface AccountNumberChangeRequest {

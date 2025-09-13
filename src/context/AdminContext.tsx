@@ -93,6 +93,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteUser = async (userId: string): Promise<void> => {
     setLoading(true);
     try {
+      // CRITICAL: Create backup before any deletion
+      try {
+        const { DataProtectionService } = await import('@/utils/dataProtectionService');
+        await DataProtectionService.createInstantBackup();
+      } catch (backupError) {
+        console.error('Backup failed before user deletion:', backupError);
+      }
+      
       const usersData = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
       
       const userToDelete = usersData.find((user: User) => user.id === userId);
@@ -111,27 +119,36 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         throw new Error("Cannot delete permanent user");
       }
       
-      const transactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
-      const filteredTransactions = transactions.filter((transaction: Transaction) => {
-        return transaction.fromAccount !== userToDelete.accountNumber && 
-               transaction.toAccount !== userToDelete.accountNumber;
-      });
-      localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(filteredTransactions));
+      // Instead of deleting, mark user as archived but preserve all data
+      const updatedUsers = usersData.map((user: User) => 
+        user.id === userId 
+          ? { ...user, deletedAt: new Date().toISOString(), isActive: false } 
+          : user
+      );
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
       
-      const filteredUsers = usersData.filter((user: User) => user.id !== userId);
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(filteredUsers));
+      // Archive transactions instead of removing them (preserve all transaction history)
+      const transactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
+      const archivedTransactions = transactions.map((transaction: Transaction) => {
+        if (transaction.fromAccount === userToDelete.accountNumber || 
+            transaction.toAccount === userToDelete.accountNumber) {
+          return { ...transaction, archivedAt: new Date().toISOString() };
+        }
+        return transaction;
+      });
+      localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(archivedTransactions));
       
       await getUsers();
       await getAllTransactions();
       
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "User archived successfully (all data preserved)",
       });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete user",
+        description: error.message || "Failed to archive user",
         variant: "destructive"
       });
     } finally {
