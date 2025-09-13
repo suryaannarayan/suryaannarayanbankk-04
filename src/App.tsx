@@ -26,6 +26,7 @@ import GoogleSheetsIntegration from "./pages/GoogleSheetsIntegration";
 import CreditCard from "./pages/CreditCardNew";
 import CreditCardManagement from "./components/admin/CreditCardManagement";
 import PremiumCards from "./pages/PremiumCards";
+import AdminPremiumCards from "./pages/AdminPremiumCards";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -55,9 +56,10 @@ const App = () => (
                     <Route path="/transactions" element={<Transactions />} />
                     <Route path="/fixed-deposit" element={<FixedDeposit />} />
                     <Route path="/credit-cards" element={<CreditCard />} />
-                    <Route path="/admin/card-management" element={<ProtectedRoute adminOnly><CreditCardManagement /></ProtectedRoute>} />
-                    <Route path="/google-sheets" element={<ProtectedRoute adminOnly><GoogleSheetsIntegration /></ProtectedRoute>} />
-                    <Route path="/premium-cards" element={<ProtectedRoute><PremiumCards /></ProtectedRoute>} />
+            <Route path="/admin/credit-cards" element={<ProtectedRoute adminOnly><CreditCardManagement /></ProtectedRoute>} />
+            <Route path="/admin/premium-cards" element={<ProtectedRoute adminOnly><AdminPremiumCards /></ProtectedRoute>} />
+            <Route path="/google-sheets" element={<ProtectedRoute adminOnly><GoogleSheetsIntegration /></ProtectedRoute>} />
+            <Route path="/premium-cards" element={<ProtectedRoute><PremiumCards /></ProtectedRoute>} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>

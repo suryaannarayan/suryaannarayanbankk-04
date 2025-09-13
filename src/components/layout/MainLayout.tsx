@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { CreditCard, ArrowUpRight, ArrowDownLeft, DollarSign, BarChart3, User, Settings, LogOut, PiggyBank, Shield, Gift } from 'lucide-react';
+import { CreditCard, ArrowUpRight, ArrowDownLeft, DollarSign, BarChart3, User, Settings, LogOut, PiggyBank, Shield, Gift, Crown } from 'lucide-react';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -110,15 +110,28 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     </li>
                     <li>
                       <Link
-                        to="/admin/card-management"
+                        to="/admin/credit-cards"
                         className={`flex items-center space-x-2 p-2 rounded-lg ${
-                          isActive('/admin/card-management') 
+                          isActive('/admin/credit-cards') 
                             ? 'text-bank-blue font-medium bg-blue-50' 
                             : 'text-gray-600 hover:bg-gray-100'
                         }`}
                       >
                         <Shield className="h-5 w-5" />
                         <span>Card Management</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/admin/premium-cards"
+                        className={`flex items-center space-x-2 p-2 rounded-lg ${
+                          isActive('/admin/premium-cards') 
+                            ? 'text-bank-blue font-medium bg-blue-50' 
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Crown className="h-5 w-5" />
+                        <span>Premium Applications</span>
                       </Link>
                     </li>
                     <li>
