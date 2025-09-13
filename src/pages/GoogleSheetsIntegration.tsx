@@ -12,7 +12,8 @@ import { FileSpreadsheet, Info, Upload, Download, Database, Shield } from 'lucid
 import { useToast } from '@/hooks/use-toast';
 import MainLayout from '@/components/layout/MainLayout';
 import GoogleSheetsStatus from '@/components/ui/GoogleSheetsStatus';
-import AdminPasswordDialog from '@/components/AdminPasswordDialog';
+import AdminPasswordDialog from '@/components/admin/AdminPasswordDialog';
+import GoogleSheetsPasswordDialog from '@/components/admin/GoogleSheetsPasswordDialog';
 import { useAuth } from '@/context/AuthContext';
 
 const GoogleSheetsIntegration = () => {
@@ -23,6 +24,7 @@ const GoogleSheetsIntegration = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -172,6 +174,16 @@ const GoogleSheetsIntegration = () => {
         onOpenChange={setShowPasswordDialog}
         onSuccess={handleAdminSuccess}
       />
+      <GoogleSheetsPasswordDialog
+        open={showChangePasswordDialog}
+        onOpenChange={setShowChangePasswordDialog}
+        onSuccess={() => {
+          toast({
+            title: "Password Updated",
+            description: "Google Sheets password updated successfully",
+          });
+        }}
+      />
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -181,7 +193,14 @@ const GoogleSheetsIntegration = () => {
               <p className="text-muted-foreground">Connect and sync data with Google Sheets</p>
             </div>
           </div>
-          <GoogleSheetsStatus isConnected={hasAdminAccess} />
+          <div className="flex items-center gap-2">
+            <GoogleSheetsStatus isConnected={hasAdminAccess} />
+            {hasAdminAccess && (
+              <Button variant="outline" size="sm" onClick={() => setShowChangePasswordDialog(true)}>
+                Change Password
+              </Button>
+            )}
+          </div>
         </div>
 
         {hasAdminAccess && (

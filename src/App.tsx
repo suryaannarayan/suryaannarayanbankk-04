@@ -23,7 +23,8 @@ import NotFound from "./pages/NotFound";
 import Transactions from "./pages/Transactions";
 import FixedDeposit from "./pages/FixedDeposit";
 import GoogleSheetsIntegration from "./pages/GoogleSheetsIntegration";
-import CreditCard from "./pages/CreditCard";
+import CreditCard from "./pages/CreditCardNew";
+import CreditCardManagement from "./components/admin/CreditCardManagement";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
                     <Route path="/transactions" element={<Transactions />} />
                     <Route path="/fixed-deposit" element={<FixedDeposit />} />
                     <Route path="/credit-card" element={<CreditCard />} />
+                    <Route path="/credit-card-management" element={<ProtectedRoute adminOnly><CreditCardManagement /></ProtectedRoute>} />
                     <Route path="/google-sheets" element={<ProtectedRoute adminOnly><GoogleSheetsIntegration /></ProtectedRoute>} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />

@@ -18,9 +18,16 @@ const Transactions = () => {
 
   useEffect(() => {
     if (user) {
-      getTransactions();
+      const fetchTransactions = async () => {
+        try {
+          await getTransactions();
+        } catch (error) {
+          console.error('Failed to fetch transactions:', error);
+        }
+      };
+      fetchTransactions();
     }
-  }, [user, getTransactions]);
+  }, [user]);
 
   useEffect(() => {
     if (transactions) {

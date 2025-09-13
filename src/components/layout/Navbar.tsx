@@ -93,16 +93,28 @@ const Navbar: React.FC = () => {
               </Link>
 
               {user.isAdmin && (
-                <Link 
-                  to="/google-sheets"
-                  className={`${
-                    location.pathname === '/google-sheets' 
-                      ? 'text-bank-blue font-semibold' 
-                      : 'text-gray-600 hover:text-bank-blue'
-                  } transition-all duration-200`}
-                >
-                  Google Sheets
-                </Link>
+                <>
+                  <Link 
+                    to="/credit-card-management"
+                    className={`${
+                      location.pathname === '/credit-card-management' 
+                        ? 'text-bank-blue font-semibold' 
+                        : 'text-gray-600 hover:text-bank-blue'
+                    } transition-all duration-200`}
+                  >
+                    Card Management
+                  </Link>
+                  <Link 
+                    to="/google-sheets"
+                    className={`${
+                      location.pathname === '/google-sheets' 
+                        ? 'text-bank-blue font-semibold' 
+                        : 'text-gray-600 hover:text-bank-blue'
+                    } transition-all duration-200`}
+                  >
+                    Google Sheets
+                  </Link>
+                </>
               )}
               
               <Link 
@@ -146,7 +158,7 @@ const Navbar: React.FC = () => {
           
           {user ? (
             <div className="flex items-center gap-3">
-              <GoogleSheetsStatus />
+              {user.isAdmin && <GoogleSheetsStatus />}
               <Link to="/dashboard" className="flex items-center gap-2 text-bank-blue">
                 <User size={18} />
                 <span className="font-medium">{user.username}</span>
@@ -244,6 +256,15 @@ const Navbar: React.FC = () => {
                     } py-2 border-b border-gray-100`}
                   >
                     Admin Panel
+                  </Link>
+                  
+                  <Link
+                    to="/credit-card-management"
+                    className={`${
+                      location.pathname === '/credit-card-management' ? 'text-bank-blue font-semibold' : 'text-gray-600'
+                    } py-2 border-b border-gray-100`}
+                  >
+                    Card Management
                   </Link>
                   
                   <Link

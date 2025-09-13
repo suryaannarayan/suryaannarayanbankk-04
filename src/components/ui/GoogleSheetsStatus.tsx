@@ -21,12 +21,12 @@ const GoogleSheetsStatus: React.FC<GoogleSheetsStatusProps> = ({ isConnected }) 
       {connected ? (
         <>
           <CloudIcon className="h-3 w-3" />
-          Google Sheets
+          Cloud Synced
         </>
       ) : (
         <>
           <HardDriveIcon className="h-3 w-3" />
-          Local Storage
+          Local Only
         </>
       )}
     </Badge>

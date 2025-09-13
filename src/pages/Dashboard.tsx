@@ -333,9 +333,8 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="deposit">
-                <TabsList className="grid grid-cols-3 mb-4">
+                <TabsList className="grid grid-cols-2 mb-4">
                   <TabsTrigger value="deposit" id="deposit-tab">Deposit</TabsTrigger>
-                  <TabsTrigger value="withdraw" id="withdraw-tab">Withdraw</TabsTrigger>
                   <TabsTrigger value="transfer" id="transfer-tab">Transfer</TabsTrigger>
                 </TabsList>
                 
@@ -364,36 +363,6 @@ const Dashboard = () => {
                       </div>
                       <Button type="submit" className="w-full" disabled={isDepositLoading}>
                         {isDepositLoading ? 'Processing...' : 'Deposit Funds'}
-                      </Button>
-                    </div>
-                  </form>
-                </TabsContent>
-                
-                <TabsContent value="withdraw">
-                  <form onSubmit={handleWithdraw}>
-                    <div className="space-y-4">
-                      <div>
-                        <label htmlFor="withdraw-amount" className="block text-sm font-medium text-gray-700 mb-1">
-                          Amount
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-gray-500">₹</span>
-                          </div>
-                          <Input
-                            id="withdraw-amount"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            className="pl-7"
-                            placeholder="0.00"
-                            value={withdrawAmount}
-                            onChange={(e) => setWithdrawAmount(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isWithdrawLoading}>
-                        {isWithdrawLoading ? 'Processing...' : 'Withdraw Funds'}
                       </Button>
                     </div>
                   </form>

@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_card_complaints: {
+        Row: {
+          admin_notes: string | null
+          card_id: string
+          created_at: string
+          description: string
+          id: string
+          issue_type: string
+          priority: string
+          resolved_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          card_id: string
+          created_at?: string
+          description: string
+          id?: string
+          issue_type: string
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          card_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          issue_type?: string
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       migration_test: {
         Row: {
           created_at: string | null
