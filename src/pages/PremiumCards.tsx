@@ -21,7 +21,35 @@ const PremiumCards = () => {
   const [customCVV, setCustomCVV] = useState<string>('');
   const [wantCustomCard, setWantCustomCard] = useState(false);
 
-  const generateCoupon = () => {
+  const generateCoupon = async () => {
+    // Check if this is the first coupon for this user
+    const existingCoupons = JSON.parse(localStorage.getItem('user_coupons') || '[]');
+    const userCoupons = existingCoupons.filter((coupon: any) => coupon.userId === user?.id);
+    const isFirstCoupon = userCoupons.length === 0;
+    
+    // If not first coupon, charge 10 rupees
+    if (!isFirstCoupon) {
+      if (!user || user.balance < 10) {
+        toast({
+          title: "Insufficient Balance",
+          description: "You need ₹10 to generate additional coupons",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      try {
+        await withdraw(10);
+      } catch (error) {
+        toast({
+          title: "Payment Failed",
+          description: "Failed to deduct coupon generation fee",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
     const couponCode = `PREMIUM${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + 3); // 3 months validity
@@ -29,8 +57,6 @@ const PremiumCards = () => {
     setGeneratedCoupon(couponCode);
     setCouponExpiry(expiryDate);
     
-    // Save to localStorage
-    const existingCoupons = JSON.parse(localStorage.getItem('user_coupons') || '[]');
     existingCoupons.push({
       code: couponCode,
       discount: 20,
@@ -42,7 +68,7 @@ const PremiumCards = () => {
     
     toast({
       title: "Coupon Generated!",
-      description: `Your 20% discount coupon ${couponCode} is ready to use!`,
+      description: `Your 20% discount coupon ${couponCode} is ready to use!${!isFirstCoupon ? ' (₹10 charged)' : ' (First coupon free!)'}`,
     });
   };
 
@@ -298,6 +324,9 @@ const PremiumCards = () => {
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4" />
                 <span>Valid for 3 months</span>
+              </div>
+              <div className="bg-yellow-100 p-2 rounded text-xs text-yellow-800">
+                First coupon free, then ₹10 per coupon
               </div>
             </div>
             

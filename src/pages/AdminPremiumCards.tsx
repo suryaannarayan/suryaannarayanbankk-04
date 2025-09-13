@@ -19,6 +19,49 @@ const AdminPremiumCards = () => {
   };
 
   const handleApprove = (applicationId: string) => {
+    const application = applications.find(app => app.id === applicationId);
+    if (!application) return;
+    
+    // Transfer money from old card to new premium card and delete old card
+    const existingCards = JSON.parse(localStorage.getItem('credit_cards') || '[]');
+    const userOldCard = existingCards.find((card: any) => card.userId === application.userId);
+    
+    if (userOldCard) {
+      // Get old card balance
+      const cardBalances = JSON.parse(localStorage.getItem('credit_card_balances') || '{}');
+      const oldCardBalance = cardBalances[userOldCard.id] || 0;
+      
+      // Create new premium card
+      const newPremiumCard = {
+        id: Date.now().toString(),
+        userId: application.userId,
+        cardNumber: application.customCardNumber || `4${Math.random().toString().slice(2, 17)}`,
+        cardholderName: userOldCard.cardholderName,
+        cvv: application.customCVV || Math.floor(Math.random() * 900 + 100).toString(),
+        expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 5)),
+        pin: userOldCard.pin,
+        isActive: true,
+        isBlocked: false,
+        failedAttempts: 0,
+        permanentlyBlocked: false,
+        validityYears: 5,
+        createdAt: new Date(),
+        isPremium: true
+      };
+      
+      // Remove old card and add new premium card
+      const updatedCards = existingCards.filter((card: any) => card.id !== userOldCard.id);
+      updatedCards.push(newPremiumCard);
+      localStorage.setItem('credit_cards', JSON.stringify(updatedCards));
+      
+      // Transfer balance to new card
+      if (oldCardBalance > 0) {
+        delete cardBalances[userOldCard.id];
+        cardBalances[newPremiumCard.id] = oldCardBalance;
+        localStorage.setItem('credit_card_balances', JSON.stringify(cardBalances));
+      }
+    }
+    
     const updatedApplications = applications.map(app => 
       app.id === applicationId ? { ...app, status: 'approved', reviewedAt: new Date().toISOString() } : app
     );
@@ -27,7 +70,7 @@ const AdminPremiumCards = () => {
     
     toast({
       title: "Application Approved",
-      description: "Premium credit card application has been approved",
+      description: "Premium credit card approved and old card replaced",
     });
   };
 

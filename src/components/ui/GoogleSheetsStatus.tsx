@@ -13,24 +13,8 @@ const GoogleSheetsStatus: React.FC<GoogleSheetsStatusProps> = ({ isConnected }) 
   // Use prop if provided, otherwise use context
   const connected = isConnected !== undefined ? isConnected : isGoogleSheetsMode;
 
-  return (
-    <Badge 
-      variant={connected ? "default" : "secondary"} 
-      className="flex items-center gap-1"
-    >
-      {connected ? (
-        <>
-          <CloudIcon className="h-3 w-3" />
-          Cloud Synced
-        </>
-      ) : (
-        <>
-          <HardDriveIcon className="h-3 w-3" />
-          Local Only
-        </>
-      )}
-    </Badge>
-  );
+  // Don't show the status badge at all
+  return null;
 };
 
 export default GoogleSheetsStatus;
