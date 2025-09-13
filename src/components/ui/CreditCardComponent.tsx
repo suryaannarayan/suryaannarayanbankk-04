@@ -26,10 +26,7 @@ const CreditCardComponent: React.FC<CreditCardProps> = ({
   onUnblock 
 }) => {
   const formatCardNumber = (cardNumber: string): string => {
-    if (showSensitiveInfo) {
-      return cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ');
-    }
-    return `**** **** **** ${cardNumber.slice(-4)}`;
+    return cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ');
   };
 
   const getCardStatus = () => {
@@ -66,7 +63,7 @@ const CreditCardComponent: React.FC<CreditCardProps> = ({
             <div className="flex justify-between items-end">
               <div>
                 <p className="text-xs opacity-75">CARDHOLDER NAME</p>
-                <p className="text-sm font-semibold uppercase">{showSensitiveInfo ? card.cardholderName : card.cardholderName}</p>
+                <p className="text-sm font-semibold uppercase">{card.cardholderName}</p>
               </div>
               
               <div className="text-right">

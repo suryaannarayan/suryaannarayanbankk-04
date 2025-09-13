@@ -24,7 +24,9 @@ const CreditCardManagement = () => {
   const [newCardForm, setNewCardForm] = useState({
     userId: '',
     cardholderName: '',
-    validityYears: '10'
+    validityYears: '10',
+    customCardNumber: '',
+    customCVV: ''
   });
   const { toast } = useToast();
 
@@ -83,9 +85,9 @@ const CreditCardManagement = () => {
       const newCard = {
         id: Date.now().toString(),
         userId: newCardForm.userId,
-        cardNumber: generateCardNumber(),
+        cardNumber: newCardForm.customCardNumber || generateCardNumber(),
         cardholderName: newCardForm.cardholderName,
-        cvv: generateCVV(),
+        cvv: newCardForm.customCVV || generateCVV(),
         expiryDate: new Date(Date.now() + parseInt(newCardForm.validityYears) * 365 * 24 * 60 * 60 * 1000),
         pin: '123456', // Default PIN, user should change
         isActive: true,
@@ -100,7 +102,7 @@ const CreditCardManagement = () => {
       existingCards.push(newCard);
       localStorage.setItem('suryabank_credit_cards', JSON.stringify(existingCards));
 
-      setNewCardForm({ userId: '', cardholderName: '', validityYears: '10' });
+      setNewCardForm({ userId: '', cardholderName: '', validityYears: '10', customCardNumber: '', customCVV: '' });
       await loadAllCards();
 
       toast({
@@ -337,6 +339,28 @@ const CreditCardManagement = () => {
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="customCardNumber">Custom Card Number (Optional)</Label>
+                  <Input
+                    id="customCardNumber"
+                    value={newCardForm.customCardNumber}
+                    onChange={(e) => setNewCardForm(prev => ({ ...prev, customCardNumber: e.target.value }))}
+                    placeholder="Leave empty for auto-generation"
+                    maxLength={16}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="customCVV">Custom CVV (Optional)</Label>
+                  <Input
+                    id="customCVV"
+                    value={newCardForm.customCVV}
+                    onChange={(e) => setNewCardForm(prev => ({ ...prev, customCVV: e.target.value }))}
+                    placeholder="Leave empty for auto-generation"
+                    maxLength={3}
+                  />
+                </div>
+
                 <Button type="submit" disabled={loading}>
                   {loading ? 'Creating...' : 'Create Credit Card'}
                 </Button>
@@ -406,6 +430,97 @@ const CreditCardManagement = () => {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Premium Card Applications */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Premium Card Applications
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const applications = JSON.parse(localStorage.getItem('premium_applications') || '[]');
+                
+                if (applications.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <AlertTriangle className="h-16 w-16 mx-auto mb-4" />
+                      <p>No premium card applications found</p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="space-y-4">
+                    {applications.map((application: any) => (
+                      <Card key={application.id}>
+                        <CardContent className="pt-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h4 className="font-semibold">Premium Card Application</h4>
+                              <p className="text-sm text-muted-foreground">
+                                User: {application.username} • Account: {application.accountNumber}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Applied: {new Date(application.appliedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Badge variant={application.status === 'pending' ? 'destructive' : 'default'}>
+                              {application.status}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm"
+                              onClick={() => {
+                                const updatedApplications = applications.map((app: any) => 
+                                  app.id === application.id 
+                                    ? { ...app, status: 'approved' }
+                                    : app
+                                );
+                                localStorage.setItem('premium_applications', JSON.stringify(updatedApplications));
+                                toast({
+                                  title: "Application Approved",
+                                  description: "Premium card application has been approved",
+                                });
+                                window.location.reload();
+                              }}
+                              disabled={application.status !== 'pending'}
+                            >
+                              Approve
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const updatedApplications = applications.map((app: any) => 
+                                  app.id === application.id 
+                                    ? { ...app, status: 'rejected' }
+                                    : app
+                                );
+                                localStorage.setItem('premium_applications', JSON.stringify(updatedApplications));
+                                toast({
+                                  title: "Application Rejected",
+                                  description: "Premium card application has been rejected",
+                                });
+                                window.location.reload();
+                              }}
+                              disabled={application.status !== 'pending'}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>

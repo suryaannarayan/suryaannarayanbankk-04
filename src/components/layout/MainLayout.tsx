@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { CreditCard, ArrowUpRight, ArrowDownLeft, DollarSign, BarChart3, User, Settings, LogOut, PiggyBank } from 'lucide-react';
+import { CreditCard, ArrowUpRight, ArrowDownLeft, DollarSign, BarChart3, User, Settings, LogOut, PiggyBank, Shield, Gift } from 'lucide-react';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -49,34 +49,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
-                    <CreditCard className="h-5 w-5" />
+                    <BarChart3 className="h-5 w-5" />
                     <span>Dashboard</span>
                   </Link>
                 </li>
                 <li>
                   <Link
-                    to="/payments"
+                    to="/credit-cards"
                     className={`flex items-center space-x-2 p-2 rounded-lg ${
-                      isActive('/payments') 
+                      isActive('/credit-cards') 
                         ? 'text-bank-blue font-medium bg-blue-50' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
-                    <ArrowUpRight className="h-5 w-5" />
-                    <span>Payments</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/deposits"
-                    className={`flex items-center space-x-2 p-2 rounded-lg ${
-                      isActive('/deposits') 
-                        ? 'text-bank-blue font-medium bg-blue-50' 
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <ArrowDownLeft className="h-5 w-5" />
-                    <span>Deposits</span>
+                    <CreditCard className="h-5 w-5" />
+                    <span>Credit Cards</span>
                   </Link>
                 </li>
                 <li>
@@ -94,45 +81,60 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 </li>
                 <li>
                   <Link
-                    to="/investments"
+                    to="/premium-cards"
                     className={`flex items-center space-x-2 p-2 rounded-lg ${
-                      isActive('/investments') 
+                      isActive('/premium-cards') 
                         ? 'text-bank-blue font-medium bg-blue-50' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
-                    <DollarSign className="h-5 w-5" />
-                    <span>Investments</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/analytics"
-                    className={`flex items-center space-x-2 p-2 rounded-lg ${
-                      isActive('/analytics') 
-                        ? 'text-bank-blue font-medium bg-blue-50' 
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <BarChart3 className="h-5 w-5" />
-                    <span>Analytics</span>
+                    <Gift className="h-5 w-5" />
+                    <span>Premium Cards</span>
                   </Link>
                 </li>
                 
                 {user.isAdmin && (
-                  <li>
-                    <Link
-                      to="/admin"
-                      className={`flex items-center space-x-2 p-2 rounded-lg ${
-                        isActive('/admin') 
-                          ? 'text-bank-blue font-medium bg-blue-50' 
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      <User className="h-5 w-5" />
-                      <span>Admin Panel</span>
-                    </Link>
-                  </li>
+                  <>
+                    <li>
+                      <Link
+                        to="/admin"
+                        className={`flex items-center space-x-2 p-2 rounded-lg ${
+                          isActive('/admin') 
+                            ? 'text-bank-blue font-medium bg-blue-50' 
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <User className="h-5 w-5" />
+                        <span>Admin Panel</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/admin/card-management"
+                        className={`flex items-center space-x-2 p-2 rounded-lg ${
+                          isActive('/admin/card-management') 
+                            ? 'text-bank-blue font-medium bg-blue-50' 
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Shield className="h-5 w-5" />
+                        <span>Card Management</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/google-sheets"
+                        className={`flex items-center space-x-2 p-2 rounded-lg ${
+                          isActive('/google-sheets') 
+                            ? 'text-bank-blue font-medium bg-blue-50' 
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <DollarSign className="h-5 w-5" />
+                        <span>Google Sheets</span>
+                      </Link>
+                    </li>
+                  </>
                 )}
               </ul>
             </nav>

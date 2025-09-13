@@ -80,17 +80,7 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition duration-300">
-                  Personal Loans
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-300 hover:text-white transition duration-300">
                   Credit Cards
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-300 hover:text-white transition duration-300">
-                  Insurance
                 </a>
               </li>
             </ul>

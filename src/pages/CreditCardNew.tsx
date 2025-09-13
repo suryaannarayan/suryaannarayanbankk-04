@@ -11,7 +11,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import CreditCardComponent from '@/components/ui/CreditCardComponent';
 import CreditCardComplaintForm from '@/components/admin/CreditCardComplaintForm';
 import { CreditCard as CreditCardIcon, Plus, Shield, AlertTriangle, DollarSign } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const CreditCardNew = () => {
@@ -19,9 +19,10 @@ const CreditCardNew = () => {
   const { creditCards, loading, createCreditCard, getUserCreditCards, blockCreditCard, unblockCreditCard } = useCreditCard();
   const [cardholderName, setCardholderName] = useState('');
   const [pin, setPin] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [userComplaints, setUserComplaints] = useState<any[]>([]);
   const [availableBalance] = useState(5000); // Mock available balance
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -47,49 +48,51 @@ const CreditCardNew = () => {
     }
   };
 
-  const handleCreateCard = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!cardholderName.trim()) {
+  const handleApplyForCard = async () => {
+    if (!cardholderName.trim() || !pin.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter cardholder name",
+        title: "Missing Information",
+        description: "Please fill in all required fields",
         variant: "destructive"
       });
       return;
     }
-    
-    if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+
+    if (pin.length !== 6) {
       toast({
-        title: "Error", 
+        title: "Invalid PIN",
         description: "PIN must be exactly 6 digits",
         variant: "destructive"
       });
       return;
     }
-    
-    setIsCreating(true);
+
+    setIsLoading(true);
     try {
       await createCreditCard(cardholderName, pin);
       setCardholderName('');
       setPin('');
+      toast({
+        title: "Application Successful",
+        description: "Your credit card has been created successfully!",
+      });
     } catch (error) {
-      // Error is handled in context
+      console.error('Failed to create credit card:', error);
+      toast({
+        title: "Application Failed",
+        description: "Failed to create credit card. Please try again.",
+        variant: "destructive"
+      });
     } finally {
-      setIsCreating(false);
+      setIsLoading(false);
     }
   };
 
-  if (!user) {
+  if (loading) {
     return (
       <MainLayout>
         <div className="container mx-auto p-6">
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Please log in to access credit card services.
-            </AlertDescription>
-          </Alert>
+          <div className="text-center">Loading...</div>
         </div>
       </MainLayout>
     );
@@ -98,39 +101,31 @@ const CreditCardNew = () => {
   return (
     <MainLayout>
       <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3">
           <CreditCardIcon className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">Credit Card Services</h1>
-            <p className="text-muted-foreground">Manage your Suryaannarayan Bank credit cards</p>
+            <h1 className="text-3xl font-bold">Credit Cards</h1>
+            <p className="text-muted-foreground">Manage your credit cards and get support</p>
           </div>
         </div>
 
-        <Alert>
-          <Shield className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Security Notice:</strong> Never share your CVV, PIN, expiry date, or full card details with anyone. 
-            Suryaannarayan Bank will never ask for these details via email, phone, or text message.
-          </AlertDescription>
-        </Alert>
-
         <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="cards">My Cards</TabsTrigger>
             <TabsTrigger value="apply">Apply for Card</TabsTrigger>
-            <TabsTrigger value="support">Support & Issues</TabsTrigger>
+            <TabsTrigger value="support">Support & Complaints</TabsTrigger>
           </TabsList>
 
           <TabsContent value="cards" className="space-y-6">
             {creditCards.length === 0 ? (
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-center space-y-4">
-                    <CreditCardIcon className="h-16 w-16 text-muted-foreground mx-auto" />
-                    <div>
-                      <h3 className="text-lg font-semibold">No Credit Cards</h3>
-                      <p className="text-muted-foreground">You don't have any credit cards yet.</p>
-                    </div>
+                  <div className="text-center">
+                    <CreditCardIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-lg font-semibold mb-2">No Credit Cards Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      You don't have any credit cards. Apply for one to get started.
+                    </p>
                     <Button onClick={() => {
                       const applyTab = document.querySelector('[value="apply"]') as HTMLElement;
                       applyTab?.click();
@@ -143,71 +138,109 @@ const CreditCardNew = () => {
               </Card>
             ) : (
               <div className="space-y-6">
+                {/* Security Warning */}
+                <Alert className="border-red-200 bg-red-50">
+                  <Shield className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>⚠️ Security Notice:</strong> Never share your credit card number, CVV, expiry date, or PIN with anyone. Keep your card details confidential and secure.
+                  </AlertDescription>
+                </Alert>
+
                 {creditCards.map((card) => (
                   <div key={card.id} className="space-y-4">
-                    <CreditCardComponent 
-                      card={card} 
-                      showSensitiveInfo={false}
-                    />
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <DollarSign className="h-5 w-5" />
-                            Available Balance
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-green-600">
-                            ₹{availableBalance.toLocaleString()}
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-2">
-                            This is your available credit limit for transactions
-                          </p>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardContent className="pt-6">
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Created:</span>
-                              <span>{card.createdAt.toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Valid Until:</span>
-                              <span>{card.expiryDate.toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Status:</span>
-                              <span className={card.isBlocked ? 'text-red-600' : 'text-green-600'}>
-                                {card.isBlocked ? 'Blocked' : 'Active'}
-                              </span>
-                            </div>
-                            {card.lastUsed && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Last Used:</span>
-                                <span>{card.lastUsed.toLocaleDateString()}</span>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <CreditCardComponent 
+                        card={card} 
+                        showSensitiveInfo={true}
+                        onBlock={() => blockCreditCard(card.id)}
+                        onUnblock={() => unblockCreditCard(card.id)}
+                      />
+                      
+                      <div className="space-y-4">
+                        {/* Card Balance */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <DollarSign className="h-5 w-5" />
+                              Card Balance
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div className="text-center">
+                                <p className="text-2xl font-bold text-green-600">₹{availableBalance.toLocaleString()}</p>
+                                <p className="text-sm text-muted-foreground">Available Balance</p>
                               </div>
-                            )}
-                          </div>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    toast({
+                                      title: "Deposit to Card",
+                                      description: "Transfer money from your bank account to credit card",
+                                    });
+                                  }}
+                                >
+                                  Deposit
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    toast({
+                                      title: "Withdraw from Card", 
+                                      description: "Transfer money from credit card to your bank account",
+                                    });
+                                  }}
+                                >
+                                  Withdraw
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
 
-                          {card.isBlocked && (
-                            <Alert className="mt-4">
-                              <Shield className="h-4 w-4" />
-                              <AlertDescription>
-                                {card.permanentlyBlocked 
-                                  ? "Card is permanently blocked. Contact admin at suryaannarayan@gmail.com" 
-                                  : card.temporaryBlockUntil && new Date() < card.temporaryBlockUntil
-                                    ? `Card temporarily blocked until ${card.temporaryBlockUntil.toLocaleString()}`
-                                    : "Card is blocked. Use Support tab to request unblock"
-                                }
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                        </CardContent>
-                      </Card>
+                        {/* Card Status */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Shield className="h-5 w-5" />
+                              Card Status
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-sm font-medium">Status:</span>
+                                <span className={`text-sm ${card.isBlocked ? 'text-red-600' : 'text-green-600'}`}>
+                                  {card.isBlocked ? 'Blocked' : 'Active'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm font-medium">Expiry:</span>
+                                <span className="text-sm">{card.expiryDate.toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm font-medium">Failed Attempts:</span>
+                                <span className="text-sm">{card.failedAttempts}/3</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-2 mt-4">
+                              <Button
+                                variant={card.isBlocked ? "default" : "destructive"}
+                                size="sm"
+                                onClick={() => card.isBlocked ? unblockCreditCard(card.id) : blockCreditCard(card.id)}
+                                className="flex-1"
+                              >
+                                {card.isBlocked ? 'Unblock Card' : 'Block Card'}
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -216,82 +249,92 @@ const CreditCardNew = () => {
           </TabsContent>
 
           <TabsContent value="apply" className="space-y-6">
-            {creditCards.length > 0 ? (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  You already have a credit card. Only one card per user is allowed.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Apply for Credit Card</CardTitle>
-                  <CardDescription>
-                    Create your Suryaannarayan Bank credit card with 10 years validity
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleCreateCard} className="space-y-4">
-                    <div>
-                      <Label htmlFor="cardholderName">Cardholder Name</Label>
-                      <Input
-                        id="cardholderName"
-                        type="text"
-                        placeholder="Enter your full name as you want it on the card"
-                        value={cardholderName}
-                        onChange={(e) => setCardholderName(e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="pin">Set 6-Digit PIN</Label>
-                      <Input
-                        id="pin"
-                        type="password"
-                        placeholder="Enter 6-digit PIN"
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        maxLength={6}
-                        required
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
-                        This PIN will be required for all transactions
-                      </p>
-                    </div>
-                    
-                    <Alert>
-                      <Shield className="h-4 w-4" />
-                      <AlertDescription>
-                        <strong>Security Notice:</strong>
-                        <ul className="list-disc list-inside mt-2 space-y-1">
-                          <li>After 3 failed PIN attempts, your card will be blocked for 12 hours</li>
-                          <li>If you fail again after the 12-hour period, your card will be permanently blocked</li>
-                          <li>Permanently blocked cards can only be unblocked by admin</li>
-                          <li>Contact admin at: <strong>suryaannarayan@gmail.com</strong></li>
-                        </ul>
-                      </AlertDescription>
-                    </Alert>
-                    
-                    <div className="bg-muted p-4 rounded-lg">
-                      <h4 className="font-semibold mb-2">Card Features:</h4>
-                      <ul className="text-sm space-y-1">
-                        <li>• Valid for 10 years by default</li>
-                        <li>• Random card number and CVV generated automatically</li>
-                        <li>• Secure PIN-based transactions</li>
-                        <li>• ₹50,000 initial credit limit</li>
-                        <li>• Admin can renew and extend validity</li>
-                      </ul>
-                    </div>
-                    
-                    <Button type="submit" disabled={isCreating || loading} className="w-full">
-                      {isCreating ? "Creating Card..." : "Apply for Credit Card"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Apply for Credit Card</CardTitle>
+                <CardDescription>Fill in your details to apply for a new credit card</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="cardholderName">Cardholder Name</Label>
+                    <Input
+                      id="cardholderName"
+                      value={cardholderName}
+                      onChange={(e) => setCardholderName(e.target.value)}
+                      placeholder="Enter your full name as it appears on your ID"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="pin">Choose Your PIN</Label>
+                    <Input
+                      id="pin"
+                      type="password"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      placeholder="Enter a 6-digit PIN"
+                      maxLength={6}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your PIN must be exactly 6 digits
+                    </p>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleApplyForCard}
+                    disabled={isLoading}
+                    className="w-full"
+                  >
+                    {isLoading ? 'Processing Application...' : 'Apply for Credit Card'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Security Notice */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-red-800 mb-2">⚠️ Important Security Notice</h3>
+              <ul className="text-sm text-red-700 space-y-1">
+                <li>• Never share your credit card details (number, CVV, expiry) with anyone</li>
+                <li>• Keep your PIN confidential and secure</li>
+                <li>• Report any suspicious activity immediately</li>
+                <li>• Use secure networks for online transactions</li>
+                <li>• Don't save card details on public devices</li>
+              </ul>
+            </div>
+
+            {/* Card Balance and Deposit/Withdraw Options */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">💳 Card Balance Management</h3>
+              <p className="text-sm text-blue-700 mb-3">Manage your credit card balance:</p>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    toast({
+                      title: "Deposit to Card",
+                      description: "Deposit feature will transfer money from your bank account to credit card",
+                    });
+                  }}
+                >
+                  Deposit to Card
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    toast({
+                      title: "Withdraw from Card",
+                      description: "Withdraw feature will transfer money from credit card to your bank account",
+                    });
+                  }}
+                >
+                  Withdraw from Card
+                </Button>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6">
@@ -300,7 +343,7 @@ const CreditCardNew = () => {
                 {creditCards.length > 0 ? (
                   <CreditCardComplaintForm
                     userCards={creditCards}
-                    userId={user.id}
+                    userId={user?.id || ''}
                     onComplaintSubmitted={loadUserComplaints}
                   />
                 ) : (

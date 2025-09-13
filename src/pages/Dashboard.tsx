@@ -274,7 +274,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <OfflineModeStatus />
+        {user.isAdmin && <OfflineModeStatus />}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="md:col-span-2">

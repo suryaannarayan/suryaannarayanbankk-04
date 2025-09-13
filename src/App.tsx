@@ -25,6 +25,7 @@ import FixedDeposit from "./pages/FixedDeposit";
 import GoogleSheetsIntegration from "./pages/GoogleSheetsIntegration";
 import CreditCard from "./pages/CreditCardNew";
 import CreditCardManagement from "./components/admin/CreditCardManagement";
+import PremiumCards from "./pages/PremiumCards";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -53,9 +54,10 @@ const App = () => (
                     <Route path="/admin" element={<AdminPanel />} />
                     <Route path="/transactions" element={<Transactions />} />
                     <Route path="/fixed-deposit" element={<FixedDeposit />} />
-                    <Route path="/credit-card" element={<CreditCard />} />
-                    <Route path="/credit-card-management" element={<ProtectedRoute adminOnly><CreditCardManagement /></ProtectedRoute>} />
+                    <Route path="/credit-cards" element={<CreditCard />} />
+                    <Route path="/admin/card-management" element={<ProtectedRoute adminOnly><CreditCardManagement /></ProtectedRoute>} />
                     <Route path="/google-sheets" element={<ProtectedRoute adminOnly><GoogleSheetsIntegration /></ProtectedRoute>} />
+                    <Route path="/premium-cards" element={<ProtectedRoute><PremiumCards /></ProtectedRoute>} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
