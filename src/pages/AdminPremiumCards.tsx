@@ -22,6 +22,8 @@ const AdminPremiumCards = () => {
     const application = applications.find(app => app.id === applicationId);
     if (!application) return;
     
+    let newPremiumCard: any = null;
+    
     // Transfer money from old card to new premium card and delete old card
     const existingCards = JSON.parse(localStorage.getItem('credit_cards') || '[]');
     const userOldCard = existingCards.find((card: any) => card.userId === application.userId);
@@ -32,7 +34,7 @@ const AdminPremiumCards = () => {
       const oldCardBalance = cardBalances[userOldCard.id] || 0;
       
       // Create new premium card
-      const newPremiumCard = {
+      newPremiumCard = {
         id: Date.now().toString(),
         userId: application.userId,
         cardNumber: application.customCardNumber || `4${Math.random().toString().slice(2, 17)}`,
@@ -67,6 +69,13 @@ const AdminPremiumCards = () => {
     );
     setApplications(updatedApplications);
     localStorage.setItem('premium_applications', JSON.stringify(updatedApplications));
+    
+    // Trigger a window event for the user to refresh their cards
+    if (newPremiumCard) {
+      window.dispatchEvent(new CustomEvent('premiumCardApproved', { 
+        detail: { userId: application.userId, cardId: newPremiumCard.id } 
+      }));
+    }
     
     toast({
       title: "Application Approved",

@@ -207,7 +207,14 @@ const CreditCard = () => {
               </Card>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {creditCards.map((card) => (
+                {creditCards
+                  .sort((a, b) => {
+                    // Sort premium cards first
+                    if (a.isPremium && !b.isPremium) return -1;
+                    if (!a.isPremium && b.isPremium) return 1;
+                    return 0;
+                  })
+                  .map((card) => (
                   <div key={card.id} className="space-y-4">
                      <CreditCardComponent 
                        card={card} 

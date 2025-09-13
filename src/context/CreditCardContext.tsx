@@ -291,6 +291,27 @@ export const CreditCardProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [user]);
 
+  // Listen for premium card approval events
+  useEffect(() => {
+    const handlePremiumCardApproved = (event: CustomEvent) => {
+      const { userId } = event.detail;
+      if (user && user.id === userId) {
+        // Refresh user's credit cards when their premium application is approved
+        getUserCreditCards();
+        toast({
+          title: "Premium Card Approved!",
+          description: "Your premium credit card application has been approved. Your new premium card is now available.",
+        });
+      }
+    };
+
+    window.addEventListener('premiumCardApproved', handlePremiumCardApproved as EventListener);
+
+    return () => {
+      window.removeEventListener('premiumCardApproved', handlePremiumCardApproved as EventListener);
+    };
+  }, [user, getUserCreditCards]);
+
   return (
     <CreditCardContext.Provider value={{
       creditCards,

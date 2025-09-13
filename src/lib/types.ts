@@ -58,6 +58,7 @@ export interface CreditCard {
   validityYears: number;
   createdAt: Date;
   lastUsed?: Date;
+  isPremium?: boolean;
 }
 
 export interface FixedDeposit {

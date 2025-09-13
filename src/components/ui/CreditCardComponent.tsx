@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useBank } from '@/context/BankContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatDate } from '@/utils/bankUtils';
-import { Edit, Trash2, Shield, ShieldOff, Plus, Minus, Eye, EyeOff, ArrowUpDown } from 'lucide-react';
+import { Edit, Trash2, Shield, ShieldOff, Plus, Minus, Eye, EyeOff, ArrowUpDown, Crown } from 'lucide-react';
 
 interface CreditCardProps {
   card: CreditCard;
@@ -144,23 +144,50 @@ const CreditCardComponent: React.FC<CreditCardProps> = ({
         </div>
       )}
 
-      <Card className="w-full max-w-sm h-56 bg-gradient-to-br from-blue-600 to-purple-700 text-white relative overflow-hidden">
+      <Card className={`w-full max-w-sm h-56 text-white relative overflow-hidden ${
+        card.isPremium 
+          ? 'bg-gradient-to-br from-yellow-500 via-amber-500 to-yellow-600 shadow-lg shadow-yellow-500/20 border border-yellow-400/30' 
+          : 'bg-gradient-to-br from-blue-600 to-purple-700'
+      }`}>
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+        
+        {/* Premium card decorative elements */}
+        {card.isPremium && (
+          <>
+            <div className="absolute top-4 right-4 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <div className="w-4 h-4 bg-white/40 rounded-full"></div>
+            </div>
+            <div className="absolute bottom-4 left-4 w-6 h-6 bg-white/20 rounded-full"></div>
+            <div className="absolute top-1/2 right-8 w-3 h-3 bg-white/30 rounded-full"></div>
+          </>
+        )}
         
         <div className="p-6 h-full flex flex-col justify-between relative z-10">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-bold">Suryaannarayan Bank</h3>
-              <p className="text-sm opacity-90">Credit Card</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold">Suryaannarayan Bank</h3>
+                {card.isPremium && <Crown className="h-4 w-4 text-white" />}
+              </div>
+              <p className="text-sm opacity-90">
+                {card.isPremium ? 'Premium Credit Card' : 'Credit Card'}
+              </p>
             </div>
-            <Badge variant={status.variant} className="text-xs">
-              {status.text}
-            </Badge>
+            <div className="flex flex-col items-end gap-1">
+              <Badge variant={status.variant} className="text-xs">
+                {status.text}
+              </Badge>
+              {card.isPremium && (
+                <Badge className="text-xs bg-white/20 text-white border-white/30">
+                  PREMIUM
+                </Badge>
+              )}
+            </div>
           </div>
           
-          <div className="space-y-2">
-            <div className="text-xl font-mono tracking-wider">
+            <div className="space-y-2">
+            <div className={`text-xl font-mono tracking-wider ${card.isPremium ? 'font-bold' : ''}`}>
               {formatCardNumber(card.cardNumber)}
             </div>
             
