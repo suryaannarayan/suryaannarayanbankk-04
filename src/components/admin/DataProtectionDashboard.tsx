@@ -77,12 +77,21 @@ const DataProtectionDashboard = () => {
         title: "Redundant Backup Complete",
         description: "Data backed up across all storage systems including Google Sheets",
       });
-    } catch (error) {
-      toast({
-        title: "Redundant Backup Failed",
-        description: "Some backup systems may have failed",
-        variant: "destructive"
-      });
+    } catch (error: any) {
+      console.error('Redundant backup error:', error);
+      if (error.message?.includes('not available')) {
+        toast({
+          title: "Offline Mode Active",
+          description: "Google Sheets unavailable. Data saved to local backups only. Please ensure sheets 'Users', 'Transactions', 'CreditCards', 'Coupons', and 'PremiumApplications' exist in your spreadsheet.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Redundant Backup Failed",
+          description: "Some backup systems may have failed",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -98,12 +107,21 @@ const DataProtectionDashboard = () => {
         title: "Sync Complete",
         description: "All data synchronized to Google Sheets",
       });
-    } catch (error) {
-      toast({
-        title: "Sync Failed",
-        description: "Failed to sync data to Google Sheets",
-        variant: "destructive"
-      });
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      if (error.message?.includes('not available')) {
+        toast({
+          title: "Offline Mode Active",
+          description: "Google Sheets unavailable. Please ensure you have internet and the sheets 'Users', 'Transactions', 'CreditCards', 'Coupons', and 'PremiumApplications' exist in your Google Spreadsheet.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sync Failed",
+          description: "Failed to sync data to Google Sheets",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -282,6 +300,20 @@ const DataProtectionDashboard = () => {
               <li>• Protection against accidental deletion</li>
               <li>• Data archiving instead of permanent deletion</li>
               <li>• Up to 100 backup versions maintained</li>
+            </ul>
+          </div>
+          
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+            <h4 className="font-semibold text-orange-800 mb-2">⚠️ Google Sheets Setup Required:</h4>
+            <p className="text-sm text-orange-700 mb-2">
+              For Google Sheets sync to work, ensure your spreadsheet has these sheets created:
+            </p>
+            <ul className="text-sm text-orange-700 space-y-1">
+              <li>• <strong>Users</strong> - User account data</li>
+              <li>• <strong>Transactions</strong> - Transaction history</li>
+              <li>• <strong>CreditCards</strong> - Credit card information</li>
+              <li>• <strong>Coupons</strong> - Coupon data</li>
+              <li>• <strong>PremiumApplications</strong> - Premium card applications</li>
             </ul>
           </div>
         </CardContent>

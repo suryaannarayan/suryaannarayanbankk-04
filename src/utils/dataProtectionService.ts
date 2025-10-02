@@ -54,10 +54,20 @@ export class DataProtectionService {
    */
   static async createInstantBackup(): Promise<void> {
     try {
-      // Backup to Google Sheets
-      await DataSyncUtils.performCompleteSync();
+      // Try to backup to Google Sheets (but don't fail if unavailable)
+      try {
+        const isAvailable = await GoogleSheetsBankService.isAvailable();
+        if (isAvailable) {
+          await DataSyncUtils.performCompleteSync();
+          console.log('Google Sheets backup completed');
+        } else {
+          console.log('Google Sheets unavailable, using local backup only');
+        }
+      } catch (error) {
+        console.log('Google Sheets backup failed, continuing with local backup:', error);
+      }
       
-      // Create local timestamped backup
+      // Create local timestamped backup (always succeeds)
       await this.createTimestampedBackup();
       
       console.log('Instant backup completed successfully');
@@ -91,11 +101,14 @@ export class DataProtectionService {
     // Clean old backups (keep only MAX_BACKUP_VERSIONS)
     this.cleanOldBackups();
 
-    // Also sync to Google Sheets
+    // Try to sync to Google Sheets (but don't fail if unavailable)
     try {
-      await DataSyncUtils.performCompleteSync();
+      const isAvailable = await GoogleSheetsBankService.isAvailable();
+      if (isAvailable) {
+        await DataSyncUtils.performCompleteSync();
+      }
     } catch (error) {
-      console.error('Google Sheets sync failed during backup:', error);
+      console.log('Google Sheets sync skipped during backup:', error);
     }
   }
 
@@ -272,16 +285,27 @@ export class DataProtectionService {
    */
   static async createRedundantBackup(): Promise<void> {
     try {
-      // 1. Google Sheets backup
-      await DataSyncUtils.performCompleteSync();
+      // 1. Local storage with versioning (always succeeds)
+      await this.createTimestampedBackup();
       
       // 2. IndexedDB backup (browser database)
       await this.saveToIndexedDB();
       
-      // 3. Local storage with versioning
-      await this.createTimestampedBackup();
+      // 3. Google Sheets backup (if available)
+      try {
+        const isAvailable = await GoogleSheetsBankService.isAvailable();
+        if (isAvailable) {
+          await DataSyncUtils.performCompleteSync();
+          console.log('Google Sheets backup completed');
+        } else {
+          console.log('Google Sheets unavailable - data saved to local backups only');
+        }
+      } catch (error) {
+        console.error('Google Sheets backup failed, but local backups succeeded:', error);
+        throw new Error('Google Sheets is not available. Please check your internet connection and ensure sheets exist.');
+      }
       
-      console.log('Redundant backup completed across all storage systems');
+      console.log('Redundant backup completed across all available storage systems');
     } catch (error) {
       console.error('Redundant backup failed:', error);
       throw error;

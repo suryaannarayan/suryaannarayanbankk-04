@@ -13,57 +13,88 @@ export class GoogleSheetsBankService {
   private static PREMIUM_APPLICATIONS_RANGE = 'PremiumApplications!A:J';
   
   /**
+   * Check if Google Sheets is available
+   */
+  static async isAvailable(): Promise<boolean> {
+    try {
+      await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'Users!A1:A1');
+      return true;
+    } catch (error) {
+      console.log('Google Sheets unavailable, using offline mode');
+      return false;
+    }
+  }
+
+  /**
    * Initialize the spreadsheet with headers if empty
    */
   static async initializeSheets() {
     try {
-      // Initialize Users sheet
-      const usersData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'Users!A1:H1');
-      if (!usersData?.values || usersData.values.length === 0) {
-        const userHeaders = [
-          ['ID', 'FirstName', 'LastName', 'Username', 'Email', 'AccountNumber', 'Balance', 'IsAdmin']
-        ];
-        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'Users!A1:H1', userHeaders);
+      // Try to initialize each sheet, ignore errors if sheet doesn't exist
+      try {
+        const usersData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'Users!A1:H1');
+        if (!usersData?.values || usersData.values.length === 0) {
+          const userHeaders = [
+            ['ID', 'FirstName', 'LastName', 'Username', 'Email', 'AccountNumber', 'Balance', 'IsAdmin']
+          ];
+          await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'Users!A1:H1', userHeaders);
+        }
+      } catch (error) {
+        console.log('Users sheet may not exist or has errors, skipping...');
       }
 
-      // Initialize Transactions sheet
-      const transactionsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'Transactions!A1:H1');
-      if (!transactionsData?.values || transactionsData.values.length === 0) {
-        const transactionHeaders = [
-          ['ID', 'Type', 'Amount', 'FromAccount', 'ToAccount', 'Description', 'Timestamp', 'Status']
-        ];
-        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'Transactions!A1:H1', transactionHeaders);
+      try {
+        const transactionsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'Transactions!A1:H1');
+        if (!transactionsData?.values || transactionsData.values.length === 0) {
+          const transactionHeaders = [
+            ['ID', 'Type', 'Amount', 'FromAccount', 'ToAccount', 'Description', 'Timestamp', 'Status']
+          ];
+          await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'Transactions!A1:H1', transactionHeaders);
+        }
+      } catch (error) {
+        console.log('Transactions sheet may not exist or has errors, skipping...');
       }
 
-      // Initialize Credit Cards sheet
-      const creditCardsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'CreditCards!A1:M1');
-      if (!creditCardsData?.values || creditCardsData.values.length === 0) {
-        const creditCardHeaders = [
-          ['ID', 'UserId', 'CardNumber', 'CardholderName', 'CVV', 'ExpiryDate', 'PIN', 'IsActive', 'IsBlocked', 'FailedAttempts', 'PermanentlyBlocked', 'ValidityYears', 'IsPremium']
-        ];
-        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'CreditCards!A1:M1', creditCardHeaders);
+      try {
+        const creditCardsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'CreditCards!A1:M1');
+        if (!creditCardsData?.values || creditCardsData.values.length === 0) {
+          const creditCardHeaders = [
+            ['ID', 'UserId', 'CardNumber', 'CardholderName', 'CVV', 'ExpiryDate', 'PIN', 'IsActive', 'IsBlocked', 'FailedAttempts', 'PermanentlyBlocked', 'ValidityYears', 'IsPremium']
+          ];
+          await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'CreditCards!A1:M1', creditCardHeaders);
+        }
+      } catch (error) {
+        console.log('CreditCards sheet may not exist or has errors, skipping...');
       }
 
-      // Initialize Coupons sheet
-      const couponsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'Coupons!A1:H1');
-      if (!couponsData?.values || couponsData.values.length === 0) {
-        const couponHeaders = [
-          ['Code', 'Type', 'Discount', 'Value', 'ExpiryDate', 'UserId', 'CreatedAt', 'Fee']
-        ];
-        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'Coupons!A1:H1', couponHeaders);
+      try {
+        const couponsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'Coupons!A1:H1');
+        if (!couponsData?.values || couponsData.values.length === 0) {
+          const couponHeaders = [
+            ['Code', 'Type', 'Discount', 'Value', 'ExpiryDate', 'UserId', 'CreatedAt', 'Fee']
+          ];
+          await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'Coupons!A1:H1', couponHeaders);
+        }
+      } catch (error) {
+        console.log('Coupons sheet may not exist or has errors, skipping...');
       }
 
-      // Initialize Premium Applications sheet
-      const premiumAppsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'PremiumApplications!A1:J1');
-      if (!premiumAppsData?.values || premiumAppsData.values.length === 0) {
-        const premiumHeaders = [
-          ['ID', 'UserId', 'Username', 'AccountNumber', 'CustomCard', 'CustomCardNumber', 'CustomCVV', 'FeesPaid', 'Status', 'AppliedAt']
-        ];
-        await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'PremiumApplications!A1:J1', premiumHeaders);
+      try {
+        const premiumAppsData = await GoogleSheetsService.readSheet(SPREADSHEET_ID, 'PremiumApplications!A1:J1');
+        if (!premiumAppsData?.values || premiumAppsData.values.length === 0) {
+          const premiumHeaders = [
+            ['ID', 'UserId', 'Username', 'AccountNumber', 'CustomCard', 'CustomCardNumber', 'CustomCVV', 'FeesPaid', 'Status', 'AppliedAt']
+          ];
+          await GoogleSheetsService.writeSheet(SPREADSHEET_ID, 'PremiumApplications!A1:J1', premiumHeaders);
+        }
+      } catch (error) {
+        console.log('PremiumApplications sheet may not exist or has errors, skipping...');
       }
+
+      console.log('Sheets initialization completed');
     } catch (error) {
       console.error('Failed to initialize sheets:', error);
-      throw error;
+      // Don't throw - allow offline mode to continue
     }
   }
 
@@ -417,6 +448,13 @@ export class GoogleSheetsBankService {
   static async fullDataSync(): Promise<void> {
     try {
       console.log('Starting complete data sync to Google Sheets...');
+      
+      // Check if Google Sheets is available
+      const isAvailable = await this.isAvailable();
+      if (!isAvailable) {
+        console.log('Google Sheets is not available, sync cancelled');
+        throw new Error('Google Sheets is not available. Please check your internet connection and sheet access.');
+      }
       
       // Initialize all sheets first
       await this.initializeSheets();

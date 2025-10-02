@@ -121,7 +121,15 @@ export class DataSyncUtils {
    */
   static async performCompleteSync(): Promise<void> {
     try {
+      // Check if Google Sheets is available
+      const isAvailable = await GoogleSheetsBankService.isAvailable();
+      if (!isAvailable) {
+        console.log('Google Sheets is not available, operating in offline mode');
+        throw new Error('Google Sheets is not available. Please check your internet connection and Google Sheets setup.');
+      }
+      
       await GoogleSheetsBankService.fullDataSync();
+      console.log('Complete sync to Google Sheets finished');
     } catch (error) {
       console.error('Complete sync failed:', error);
       throw error;

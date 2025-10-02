@@ -23,7 +23,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import TransactionItem from '@/components/ui/TransactionItem';
-import { AlertCircle, Trash2, Edit3, RefreshCw, User, Users, Clock } from 'lucide-react';
+import BackupManager from '@/components/admin/BackupManager';
+import { AlertCircle, Trash2, Edit3, RefreshCw, User, Users, Clock, FileArchive } from 'lucide-react';
 import { User as UserType } from '@/lib/types';
 
 const AdminDashboard = () => {
@@ -107,6 +108,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="transactions">
             <Clock className="h-4 w-4 mr-2" />
             Transactions
+          </TabsTrigger>
+          <TabsTrigger value="backup">
+            <FileArchive className="h-4 w-4 mr-2" />
+            Backup & Export
           </TabsTrigger>
         </TabsList>
         
@@ -231,6 +236,10 @@ const AdminDashboard = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="backup">
+          <BackupManager />
         </TabsContent>
       </Tabs>
       
