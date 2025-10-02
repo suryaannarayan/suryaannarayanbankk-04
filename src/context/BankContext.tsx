@@ -39,11 +39,6 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsGoogleSheetsMode(true);
         console.log('Google Sheets connected successfully');
         
-        toast({
-          title: "Cloud Sync Connected",
-          description: "Your data will now sync with Google Sheets",
-        });
-        
         // Check if we need to migrate local data
         const localUsers = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
         const localTransactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
@@ -54,12 +49,6 @@ export const BankProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.warn('Google Sheets connection failed, running in offline mode:', error);
         setIsGoogleSheetsMode(false);
-        
-        toast({
-          title: "Offline Mode",
-          description: "Running with local storage. Connect Google Sheets in admin panel for cloud sync.",
-          variant: "default"
-        });
       }
     };
 

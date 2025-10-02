@@ -82,9 +82,9 @@ const Navbar: React.FC = () => {
               </Link>
 
               <Link 
-                to="/credit-card"
+                to="/credit-cards"
                 className={`${
-                  location.pathname === '/credit-card' 
+                  location.pathname === '/credit-cards' 
                     ? 'text-bank-blue font-semibold' 
                     : 'text-gray-600 hover:text-bank-blue'
                 } transition-all duration-200`}
@@ -95,9 +95,9 @@ const Navbar: React.FC = () => {
               {user.isAdmin && (
                 <>
                   <Link 
-                    to="/credit-card-management"
+                    to="/admin/credit-cards"
                     className={`${
-                      location.pathname === '/credit-card-management' 
+                      location.pathname === '/admin/credit-cards' 
                         ? 'text-bank-blue font-semibold' 
                         : 'text-gray-600 hover:text-bank-blue'
                     } transition-all duration-200`}
@@ -230,9 +230,9 @@ const Navbar: React.FC = () => {
               </Link>
 
               <Link
-                to="/credit-card"
+                to="/credit-cards"
                 className={`${
-                  location.pathname === '/credit-card' ? 'text-bank-blue font-semibold' : 'text-gray-600'
+                  location.pathname === '/credit-cards' ? 'text-bank-blue font-semibold' : 'text-gray-600'
                 } py-2 border-b border-gray-100`}
               >
                 Credit Card
@@ -259,9 +259,9 @@ const Navbar: React.FC = () => {
                   </Link>
                   
                   <Link
-                    to="/credit-card-management"
+                    to="/admin/credit-cards"
                     className={`${
-                      location.pathname === '/credit-card-management' ? 'text-bank-blue font-semibold' : 'text-gray-600'
+                      location.pathname === '/admin/credit-cards' ? 'text-bank-blue font-semibold' : 'text-gray-600'
                     } py-2 border-b border-gray-100`}
                   >
                     Card Management
